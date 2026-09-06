@@ -8,6 +8,7 @@ Testing input:
   The window should open and remain responsive until you close it.
 */
 
+#include "window.h"
+#include <stdio.h>
 
-int main () {
-}
+int main() { open_window(); }
