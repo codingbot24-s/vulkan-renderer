@@ -2,8 +2,11 @@
 // Created by saad on 9/6/26.
 //
 
-#ifndef MYPROJECTNAME_WINDOW_H
-#define MYPROJECTNAME_WINDOW_H
-int open_window();
+#ifndef VULKAN_RENDERER_WINDOW_H
+#define VULKAN_RENDERER_WINDOW_H
+#include <GLFW/glfw3.h>
 
-#endif // MYPROJECTNAME_WINDOW_H
+GLFWwindow *create_window();
+void main_loop(GLFWwindow *window);
+void clean_up(GLFWwindow *window);
+#endif // VULKAN_RENDERER_WINDOW_H
