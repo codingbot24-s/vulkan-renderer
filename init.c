@@ -23,8 +23,8 @@ static const bool enable_validation_layers = false;
 static const bool enable_validation_layers = true;
 #endif
 
-/// required_instance_extension_count by glfw
 static uint32_t required_instance_extension_count = 0;
+/// required_instance_extension by glfw
 static const char **required_extensions;
 
 bool check_required_instance_extension_support() {
@@ -35,7 +35,9 @@ bool check_required_instance_extension_support() {
   if (required_instance_extension_count == 0 || required_extensions) {
     return false;
   }
-
+  if (enable_validation_layers) {
+    /// push debug extension in to the required extensions
+  }
   vkEnumerateInstanceExtensionProperties(NULL, &instance_extension_count, NULL);
   if (instance_extension_count == 0) {
     return false;
@@ -51,7 +53,24 @@ bool check_required_instance_extension_support() {
   vkEnumerateInstanceExtensionProperties(NULL, &instance_extension_count,
                                          availabe_extension);
 
-  // TODO: add instance extension check
+  /// ADDONEAFTERSTREAM: this is just searching in the available extension did we find the
+  /// required extension just this 
+  for (int i = 0; i < required_instance_extension_count; ++i) {
+    bool found_extension = false;
+    for (int j = 0; j < instance_extension_count; ++j) {
+      if (strcmp(required_extensions[i],availabe_extension[j].extensionName) == 0) {
+        found_extension = true;
+        break;
+      }
+    }
+    if (found_extension == false) {
+      fprintf(stderr, "Required extension %s not found \n", required_extensions[i]);
+      free(availabe_extension);
+      return false;
+    }
+  }
+
+  free(availabe_extension);
   return true;
 }
 
@@ -107,8 +126,8 @@ void init_vulkan() {
       .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
       .pNext = NULL,
       .pApplicationInfo = &app_info,
-      .enabledExtensionCount = glfw_extension_count,
-      .ppEnabledExtensionNames = glfw_extensions,
+      .enabledExtensionCount = required_instance_extension_count,
+      .ppEnabledExtensionNames = required_extensions,
       .enabledLayerCount = 0,
   };
   if (enable_validation_layers) {
@@ -125,6 +144,14 @@ void init_vulkan() {
   }
 
   printf("instance created  \n");
+}
+
+
+static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback (VkDebugUtilsMessageSeverityFlagBitsEXT severity, VkDebugUtilsMessageTypeFlagsEXT type, VkDebugUtilsMessengerCallbackDataEXT* p_callbackdata,void* p_user_data) {
+  if (severity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT|| severity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT){
+    /// Print the message 
+  }
+
 }
 
 void run_app() {
