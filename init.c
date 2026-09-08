@@ -4,6 +4,7 @@
 
 #include "window.h"
 #include <GLFW/glfw3.h>
+#include <ctype.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -32,39 +33,56 @@ bool check_required_instance_extension_support() {
 
   required_extensions =
       glfwGetRequiredInstanceExtensions(&required_instance_extension_count);
-  if (required_instance_extension_count == 0 || required_extensions) {
+  if (required_instance_extension_count == 0 || required_extensions == NULL) {
     return false;
   }
   if (enable_validation_layers) {
-    /// push debug extension in to the required extensions
   }
   vkEnumerateInstanceExtensionProperties(NULL, &instance_extension_count, NULL);
   if (instance_extension_count == 0) {
     return false;
   }
 
-  // MALLOC: free this malloc
+  uint32_t total_extensions = required_instance_extension_count + 1;
+  /// MALLOC: FREE THIS
+  char **enabled_extensions = malloc(total_extensions * sizeof(char *));
+  if (!enabled_extensions) {
+    fprintf(stderr, "cant allocate for enabled extension \n");
+    return false;
+  }
+  for (int i = 0; i < required_instance_extension_count; ++i) {
+    enabled_extensions[i] = required_extensions[i];
+  }
+  /// the error was here -1 is correct
+  enabled_extensions[total_extensions - 1] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
+
   VkExtensionProperties *availabe_extension =
       malloc(instance_extension_count * sizeof(VkExtensionProperties));
   if (!availabe_extension) {
     return false;
   }
+  VkResult result = vkEnumerateInstanceExtensionProperties(
+      NULL, &instance_extension_count, availabe_extension);
 
-  vkEnumerateInstanceExtensionProperties(NULL, &instance_extension_count,
-                                         availabe_extension);
+  if (result != VK_SUCCESS) {
+    fprintf(stderr, "vkEnumerateInstanceExtensionProperties failed: %d\n",
+            result);
+    free(availabe_extension);
+    return false;
+  }
 
-  /// ADDONEAFTERSTREAM: this is just searching in the available extension did we find the
-  /// required extension just this 
   for (int i = 0; i < required_instance_extension_count; ++i) {
     bool found_extension = false;
     for (int j = 0; j < instance_extension_count; ++j) {
-      if (strcmp(required_extensions[i],availabe_extension[j].extensionName) == 0) {
+      if (strcmp(required_extensions[i], availabe_extension[j].extensionName) ==
+          0) {
         found_extension = true;
         break;
       }
     }
     if (found_extension == false) {
-      fprintf(stderr, "Required extension %s not found \n", required_extensions[i]);
+      fprintf(stderr, "Required extension %s not found \n",
+              required_extensions[i]);
       free(availabe_extension);
       return false;
     }
@@ -122,6 +140,11 @@ void init_vulkan() {
       .apiVersion = VK_API_VERSION_1_0,
   };
 
+  if (!check_required_instance_extension_support()) {
+    fprintf(stderr, "Error in checking extension \n");
+    exit(EXIT_FAILURE);
+  }
+
   VkInstanceCreateInfo instance_creation_info = {
       .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
       .pNext = NULL,
@@ -146,13 +169,16 @@ void init_vulkan() {
   printf("instance created  \n");
 }
 
-
-static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback (VkDebugUtilsMessageSeverityFlagBitsEXT severity, VkDebugUtilsMessageTypeFlagsEXT type, VkDebugUtilsMessengerCallbackDataEXT* p_callbackdata,void* p_user_data) {
-  if (severity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT|| severity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT){
-    /// Print the message 
-  }
-
-}
+// static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
+//     VkDebugUtilsMessageSeverityFlagBitsEXT severity,
+//     VkDebugUtilsMessageTypeFlagsEXT type,
+//     VkDebugUtilsMessengerCallbackDataEXT *p_callbackdata, void *p_user_data)
+//     {
+//   if (severity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT ||
+//       severity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
+//     /// TODO: Print the message
+//   }
+// }
 
 void run_app() {
 

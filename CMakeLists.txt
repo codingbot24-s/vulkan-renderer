@@ -16,3 +16,11 @@ add_executable(vulkan-renderer main.c
 
 
 target_link_libraries(vulkan-renderer PRIVATE glfw vulkan)
+target_compile_options(vulkan-renderer PRIVATE
+    -fsanitize=address
+    -fno-omit-frame-pointer
+)
+
+target_link_options(vulkan-renderer PRIVATE
+    -fsanitize=address
+)
