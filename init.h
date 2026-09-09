@@ -4,7 +4,5 @@
 
 #ifndef VULKAN_RENDERER_INIT_H
 #define VULKAN_RENDERER_INIT_H
-
-#endif // VULKAN_RENDERER_INIT_H
-
 void run_app();
+#endif // VULKAN_RENDERER_INIT_H

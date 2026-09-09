@@ -2,9 +2,9 @@
 // Created by saad on 9/6/26.
 //
 
+#include "init.h"
 #include "window.h"
 #include <GLFW/glfw3.h>
-#include <ctype.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -26,6 +26,7 @@ static const bool enable_validation_layers = true;
 
 static uint32_t required_instance_extension_count = 0;
 /// required_instance_extension by glfw
+
 static const char **required_extensions;
 
 bool check_required_instance_extension_support() {
@@ -53,9 +54,10 @@ bool check_required_instance_extension_support() {
   for (int i = 0; i < required_instance_extension_count; ++i) {
     enabled_extensions[i] = required_extensions[i];
   }
-  /// the error was here -1 is correct
-  enabled_extensions[total_extensions - 1] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
 
+  enabled_extensions[total_extensions - 1] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
+  /// also we need to check if enabled extensions are availabe in the instance
+  /// // ok so we will fix this in next stream extension or offline
   VkExtensionProperties *availabe_extension =
       malloc(instance_extension_count * sizeof(VkExtensionProperties));
   if (!availabe_extension) {
@@ -124,8 +126,7 @@ bool check_validation_layer_support() {
   return true;
 }
 
-void init_vulkan() {
-
+VkInstance create_instance() {
   if (enable_validation_layers && !check_validation_layer_support()) {
     exit(EXIT_FAILURE);
   }
@@ -144,7 +145,6 @@ void init_vulkan() {
     fprintf(stderr, "Error in checking extension \n");
     exit(EXIT_FAILURE);
   }
-
   VkInstanceCreateInfo instance_creation_info = {
       .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
       .pNext = NULL,
@@ -167,18 +167,66 @@ void init_vulkan() {
   }
 
   printf("instance created  \n");
+
+  return instance;
 }
 
-// static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
-//     VkDebugUtilsMessageSeverityFlagBitsEXT severity,
-//     VkDebugUtilsMessageTypeFlagsEXT type,
-//     VkDebugUtilsMessengerCallbackDataEXT *p_callbackdata, void *p_user_data)
-//     {
-//   if (severity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT ||
-//       severity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
-//     /// TODO: Print the message
-//   }
-// }
+static VKAPI_ATTR VkBool32 VKAPI_CALL
+debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
+              VkDebugUtilsMessageTypeFlagsEXT messageType,
+              const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
+              void *pUserData) {
+
+  if (severity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT ||
+      severity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
+    fprintf(stderr, "msg %s", pCallbackData->pMessage);
+  }
+
+  return VK_FALSE;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL vkCreateDebugUtilsMessengerEXT(
+    VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
+    const VkAllocationCallbacks *pAllocator,
+    VkDebugUtilsMessengerEXT *pMessenger) {
+  PFN_vkCreateDebugUtilsMessengerEXT func =
+      (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
+          instance, "vkCreateDebugUtilsMessengerEXT");
+  if (func != NULL) {
+    return func(instance, pCreateInfo, pAllocator, pMessenger);
+  }
+  return VK_ERROR_EXTENSION_NOT_PRESENT;
+}
+
+void setup_debug_messenger(VkInstance instance) {
+  if (!enable_validation_layers) {
+    return;
+  }
+
+  VkDebugUtilsMessengerEXT messenger = NULL;
+  VkDebugUtilsMessageSeverityFlagBitsEXT severity_flags =
+      (VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+       VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT);
+  VkDebugUtilsMessageTypeFlagBitsEXT messagetype_flags =
+      (VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+       VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+       VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT);
+  VkDebugUtilsMessengerCreateInfoEXT debug_messenger_create_info = {
+      .messageType = messagetype_flags,
+      .messageSeverity = severity_flags,
+      .pfnUserCallback = &debugCallback,
+  };
+  if (vkCreateDebugUtilsMessengerEXT(instance, &debug_messenger_create_info,
+                                     NULL, &messenger) != VK_SUCCESS) {
+    fprintf(stderr, "Cant create a debug messenger \n");
+    return;
+  }
+}
+
+void init_vulkan() {
+  VkInstance instance = create_instance();
+  setup_debug_messenger(instance);
+}
 
 void run_app() {
 
