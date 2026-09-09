@@ -229,6 +229,7 @@ void setup_debug_messenger(VkInstance instance) {
        VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
        VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT);
   VkDebugUtilsMessengerCreateInfoEXT debug_messenger_create_info = {
+      .sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
       .messageType = messagetype_flags,
       .messageSeverity = severity_flags,
       .pfnUserCallback = &debugCallback,
