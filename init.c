@@ -24,45 +24,57 @@ static const bool enable_validation_layers = false;
 static const bool enable_validation_layers = true;
 #endif
 
-static uint32_t required_instance_extension_count = 0;
-/// required_instance_extension by glfw
-
-static const char **required_extensions;
+static const char **enabled_extensions;
+static uint32_t total_extensions;
 
 bool check_required_instance_extension_support() {
-  uint32_t instance_extension_count = 0;
 
+  static uint32_t required_instance_extension_count = 0;
+  /// required_instance_extension by glfw
+  static const char **required_extensions;
   required_extensions =
       glfwGetRequiredInstanceExtensions(&required_instance_extension_count);
   if (required_instance_extension_count == 0 || required_extensions == NULL) {
     return false;
   }
+  total_extensions = required_instance_extension_count;
   if (enable_validation_layers) {
+    total_extensions++;
   }
+  /// using 64 as it is used in glfw demo vulkan triangle
+  /// TODO: we would need to implement the vector aka dynamic
+  /// array for pushing extension
+  /// MALLOC: FREE THIS
+  enabled_extensions = malloc(total_extensions * sizeof(char *));
+  if (!enabled_extensions) {
+    fprintf(stderr, "cant allocate for enabled extension \n");
+    return false;
+  }
+
+  for (int i = 0; i < required_instance_extension_count; ++i) {
+    enabled_extensions[i] = required_extensions[i];
+  }
+
+  /// NOTE: implementing vector will help us here this is bad code
+  if (enable_validation_layers) {
+    enabled_extensions[required_instance_extension_count] =
+        VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
+  }
+  /// NOTE: add vulkan surface extension here
+  // enabled_extensions[required_instance_extension_count + 2] =
+
+  uint32_t instance_extension_count = 0;
   vkEnumerateInstanceExtensionProperties(NULL, &instance_extension_count, NULL);
   if (instance_extension_count == 0) {
     return false;
   }
 
-  uint32_t total_extensions = required_instance_extension_count + 1;
-  /// MALLOC: FREE THIS
-  char **enabled_extensions = malloc(total_extensions * sizeof(char *));
-  if (!enabled_extensions) {
-    fprintf(stderr, "cant allocate for enabled extension \n");
-    return false;
-  }
-  for (int i = 0; i < required_instance_extension_count; ++i) {
-    enabled_extensions[i] = required_extensions[i];
-  }
-
-  enabled_extensions[total_extensions - 1] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
-  /// also we need to check if enabled extensions are availabe in the instance
-  /// // ok so we will fix this in next stream extension or offline
   VkExtensionProperties *availabe_extension =
       malloc(instance_extension_count * sizeof(VkExtensionProperties));
   if (!availabe_extension) {
     return false;
   }
+
   VkResult result = vkEnumerateInstanceExtensionProperties(
       NULL, &instance_extension_count, availabe_extension);
 
@@ -72,11 +84,10 @@ bool check_required_instance_extension_support() {
     free(availabe_extension);
     return false;
   }
-
-  for (int i = 0; i < required_instance_extension_count; ++i) {
+  for (int i = 0; i < total_extensions; ++i) {
     bool found_extension = false;
     for (int j = 0; j < instance_extension_count; ++j) {
-      if (strcmp(required_extensions[i], availabe_extension[j].extensionName) ==
+      if (strcmp(enabled_extensions[i], availabe_extension[j].extensionName) ==
           0) {
         found_extension = true;
         break;
@@ -84,8 +95,9 @@ bool check_required_instance_extension_support() {
     }
     if (found_extension == false) {
       fprintf(stderr, "Required extension %s not found \n",
-              required_extensions[i]);
+              enabled_extensions[i]);
       free(availabe_extension);
+      free(enabled_extensions);
       return false;
     }
   }
@@ -149,8 +161,8 @@ VkInstance create_instance() {
       .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
       .pNext = NULL,
       .pApplicationInfo = &app_info,
-      .enabledExtensionCount = required_instance_extension_count,
-      .ppEnabledExtensionNames = required_extensions,
+      .enabledExtensionCount = total_extensions,
+      .ppEnabledExtensionNames = enabled_extensions,
       .enabledLayerCount = 0,
   };
   if (enable_validation_layers) {
@@ -185,6 +197,11 @@ debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
   return VK_FALSE;
 }
 
+/// NOTE:fixed offstream
+/// Error is this function return extension not present
+/// the cause i think is we are assigning the wrong extensions array when we
+/// create instance and that why we are getting extension not found yes this was
+/// the case and we solved that
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateDebugUtilsMessengerEXT(
     VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
     const VkAllocationCallbacks *pAllocator,
