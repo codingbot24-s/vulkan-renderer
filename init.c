@@ -2,17 +2,16 @@
 // Created by saad on 9/6/26.
 //
 
+#include <vulkan/vulkan_core.h>
+#define GLFW_INCLUDE_VULKAN
 #include "init.h"
 #include "window.h"
 #include <GLFW/glfw3.h>
-#include <complex.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <vulkan/vulkan.h>
-#include <vulkan/vulkan_core.h>
 
 static const char *validation_layers[] = {
     "VK_LAYER_KHRONOS_validation",
@@ -28,6 +27,12 @@ static const bool enable_validation_layers = true;
 static const char **enabled_extensions;
 static uint32_t total_extensions;
 
+static const char *requiredDeviceExtension[] = {
+    "VK_KHR_swapchain",
+};
+
+static uint32_t required_device_extension_count = 1;
+
 bool check_required_instance_extension_support() {
 
   static uint32_t required_instance_extension_count = 0;
@@ -42,7 +47,6 @@ bool check_required_instance_extension_support() {
   if (enable_validation_layers) {
     total_extensions++;
   }
-  /// using 64 as it is used in glfw demo vulkan triangle
   /// TODO: we would need to implement the vector aka dynamic
   /// array for pushing extension
   /// MALLOC: FREE THIS
@@ -61,8 +65,6 @@ bool check_required_instance_extension_support() {
     enabled_extensions[required_instance_extension_count] =
         VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
   }
-  /// NOTE: add vulkan surface extension here
-  // enabled_extensions[required_instance_extension_count + 2] =
 
   uint32_t instance_extension_count = 0;
   vkEnumerateInstanceExtensionProperties(NULL, &instance_extension_count, NULL);
@@ -264,7 +266,7 @@ bool is_device_suitable(VkPhysicalDevice device) {
   if (physical_device_queue_family_count == 0) {
     return false;
   }
-
+  // MALLOC: FREE THIS
   VkQueueFamilyProperties *physical_device_queue_family_properties = malloc(
       physical_device_queue_family_count * sizeof(VkQueueFamilyProperties));
   if (!physical_device_queue_family_properties) {
@@ -274,19 +276,70 @@ bool is_device_suitable(VkPhysicalDevice device) {
       device, &physical_device_queue_family_count,
       physical_device_queue_family_properties);
 
-  bool graphics_property;
-  /// check for the graphics property in queue family
+  bool graphics_property = false;
   for (int i = 0; i < physical_device_queue_family_count; ++i) {
-    graphics_property = false;
-    VkQueueFamilyProperties qfp = physical_device_queue_family_properties[i];
-    graphics_property = !!(qfp.queueFlags & VK_QUEUE_GRAPHICS_BIT);
+    if (physical_device_queue_family_properties[i].queueFlags &
+        VK_QUEUE_GRAPHICS_BIT) {
+      graphics_property = true;
+      break;
+    }
   }
 
   if (!graphics_property) {
+    free(physical_device_queue_family_properties);
     return false;
   }
 
-  /// we will continue from here
+  /// ADDONOFFSTREAM: from here
+  uint32_t device_extension_prop_count = 0;
+  if (vkEnumerateDeviceExtensionProperties(
+          device, NULL, &device_extension_prop_count, NULL) != VK_SUCCESS) {
+    fprintf(stderr, "cant get the device extension count \n");
+    free(physical_device_queue_family_properties);
+    return false;
+  }
+  /// MALLOC: FREE_THIS
+  VkExtensionProperties *available_device_extension =
+      malloc(device_extension_prop_count * sizeof(VkExtensionProperties));
+  if (!available_device_extension) {
+    fprintf(stderr, "cant allocate the extension properties buffer \n");
+    free(physical_device_queue_family_properties);
+    return false;
+  }
+
+  if (vkEnumerateDeviceExtensionProperties(
+          device, NULL, &device_extension_prop_count,
+          available_device_extension) != VK_SUCCESS) {
+
+    fprintf(stderr, "cant get the available device extension\n");
+    free(physical_device_queue_family_properties);
+    free(available_device_extension);
+    return false;
+  }
+
+  for (int i = 0; i < required_device_extension_count; ++i) {
+    bool required_extension_found = false;
+    for (int j = 0; j < device_extension_prop_count; ++j) {
+      if (strcmp(requiredDeviceExtension[i],
+                 available_device_extension[j].extensionName) == 0) {
+        required_extension_found = true;
+        break;
+      }
+    }
+    if (!required_extension_found) {
+      free(physical_device_queue_family_properties);
+      free(available_device_extension);
+      fprintf(
+          stderr,
+          "cant find the required extension %s in the availabe extension \n",
+          requiredDeviceExtension[i]);
+      return false;
+    }
+  }
+
+  free(physical_device_queue_family_properties);
+  free(available_device_extension);
+  return true;
 }
 
 /// NOTE: we can also pick the device by score

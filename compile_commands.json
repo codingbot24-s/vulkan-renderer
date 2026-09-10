@@ -1,0 +1,20 @@
+[
+{
+  "directory": "/home/saad/code/c/vulkan-renderer",
+  "command": "/usr/sbin/cc   -fsanitize=address -fno-omit-frame-pointer -o CMakeFiles/vulkan-renderer.dir/main.c.o -c /home/saad/code/c/vulkan-renderer/main.c",
+  "file": "/home/saad/code/c/vulkan-renderer/main.c",
+  "output": "CMakeFiles/vulkan-renderer.dir/main.c.o"
+},
+{
+  "directory": "/home/saad/code/c/vulkan-renderer",
+  "command": "/usr/sbin/cc   -fsanitize=address -fno-omit-frame-pointer -o CMakeFiles/vulkan-renderer.dir/window.c.o -c /home/saad/code/c/vulkan-renderer/window.c",
+  "file": "/home/saad/code/c/vulkan-renderer/window.c",
+  "output": "CMakeFiles/vulkan-renderer.dir/window.c.o"
+},
+{
+  "directory": "/home/saad/code/c/vulkan-renderer",
+  "command": "/usr/sbin/cc   -fsanitize=address -fno-omit-frame-pointer -o CMakeFiles/vulkan-renderer.dir/init.c.o -c /home/saad/code/c/vulkan-renderer/init.c",
+  "file": "/home/saad/code/c/vulkan-renderer/init.c",
+  "output": "CMakeFiles/vulkan-renderer.dir/init.c.o"
+}
+]

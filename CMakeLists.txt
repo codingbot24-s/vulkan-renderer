@@ -4,8 +4,6 @@ project(vulkan-renderer LANGUAGES C)
 
 find_package(glfw3 3.3 REQUIRED)
 
-
-
 add_executable(vulkan-renderer main.c
         window.c
         window.h
@@ -13,7 +11,7 @@ add_executable(vulkan-renderer main.c
         init.c
         init.h)
 
-
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 target_link_libraries(vulkan-renderer PRIVATE glfw vulkan)
 target_compile_options(vulkan-renderer PRIVATE
