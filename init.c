@@ -5,6 +5,7 @@
 #include "init.h"
 #include "window.h"
 #include <GLFW/glfw3.h>
+#include <complex.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -197,11 +198,6 @@ debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
   return VK_FALSE;
 }
 
-/// NOTE:fixed offstream
-/// Error is this function return extension not present
-/// the cause i think is we are assigning the wrong extensions array when we
-/// create instance and that why we are getting extension not found yes this was
-/// the case and we solved that
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateDebugUtilsMessengerEXT(
     VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
     const VkAllocationCallbacks *pAllocator,
@@ -234,6 +230,7 @@ void setup_debug_messenger(VkInstance instance) {
       .messageSeverity = severity_flags,
       .pfnUserCallback = &debugCallback,
   };
+
   if (vkCreateDebugUtilsMessengerEXT(instance, &debug_messenger_create_info,
                                      NULL, &messenger) != VK_SUCCESS) {
     fprintf(stderr, "Cant create a debug messenger \n");
@@ -241,18 +238,110 @@ void setup_debug_messenger(VkInstance instance) {
   }
 }
 
-void init_vulkan() {
-  VkInstance instance = create_instance();
-  setup_debug_messenger(instance);
+void create_surface(renderer *renderer) {
+  VkSurfaceKHR surface = VK_NULL_HANDLE;
+
+  VkResult res = glfwCreateWindowSurface(renderer->my_vk_instance,
+                                         renderer->window, NULL, &surface);
+  if (res != VK_SUCCESS || surface == NULL) {
+    fprintf(stderr, "cant create a vulkan surface \n");
+    return;
+  }
+
+  renderer->my_surface = surface;
+}
+
+bool is_device_suitable(VkPhysicalDevice device) {
+  VkPhysicalDeviceProperties physical_device_props;
+  vkGetPhysicalDeviceProperties(device, &physical_device_props);
+  if (physical_device_props.apiVersion < VK_API_VERSION_1_0) {
+    return false;
+  }
+
+  uint32_t physical_device_queue_family_count = 0;
+  vkGetPhysicalDeviceQueueFamilyProperties(
+      device, &physical_device_queue_family_count, NULL);
+  if (physical_device_queue_family_count == 0) {
+    return false;
+  }
+
+  VkQueueFamilyProperties *physical_device_queue_family_properties = malloc(
+      physical_device_queue_family_count * sizeof(VkQueueFamilyProperties));
+  if (!physical_device_queue_family_properties) {
+    return false;
+  }
+  vkGetPhysicalDeviceQueueFamilyProperties(
+      device, &physical_device_queue_family_count,
+      physical_device_queue_family_properties);
+
+  bool graphics_property;
+  /// check for the graphics property in queue family
+  for (int i = 0; i < physical_device_queue_family_count; ++i) {
+    graphics_property = false;
+    VkQueueFamilyProperties qfp = physical_device_queue_family_properties[i];
+    graphics_property = !!(qfp.queueFlags & VK_QUEUE_GRAPHICS_BIT);
+  }
+
+  if (!graphics_property) {
+    return false;
+  }
+
+  /// we will continue from here
+}
+
+/// NOTE: we can also pick the device by score
+void pick_physical_device(renderer *renderer) {
+  VkPhysicalDevice my_pdevice = VK_NULL_HANDLE;
+
+  uint32_t physical_devices_count = 0;
+  vkEnumeratePhysicalDevices(renderer->my_vk_instance, &physical_devices_count,
+                             NULL);
+
+  if (physical_devices_count == 0) {
+    fprintf(stderr, "failed to find GPUs with Vulkan support! \n");
+    return;
+  }
+  /// MALLOC: FREE THIS
+  VkPhysicalDevice *available_devices =
+      malloc(physical_devices_count * sizeof(VkPhysicalDevice));
+  if (!available_devices) {
+    fprintf(stderr, "failed allocation for physical devices! \n");
+    return;
+  }
+
+  if (vkEnumeratePhysicalDevices(renderer->my_vk_instance,
+                                 &physical_devices_count,
+                                 available_devices) != 0) {
+    fprintf(stderr, "Error getting physical devices");
+    return;
+  }
+
+  for (int i = 0; i < physical_devices_count; ++i) {
+    if (is_device_suitable(available_devices[i])) {
+      my_pdevice = available_devices[i];
+      /// should we call free here also ?
+      break;
+    }
+  }
+
+  if (my_pdevice == VK_NULL_HANDLE) {
+    fprintf(stderr, "failed to find a suitable gpu");
+    free(available_devices);
+    return;
+  }
+}
+
+void init_vulkan(renderer *renderer) {
+  renderer->my_vk_instance = create_instance();
+  setup_debug_messenger(renderer->my_vk_instance);
+  pick_physical_device(renderer);
+  create_surface(renderer);
 }
 
 void run_app() {
-
-  GLFWwindow *win = create_window();
-  if (win == NULL) {
-    exit(EXIT_FAILURE);
-  }
-  init_vulkan();
-  main_loop(win);
-  clean_up(win);
+  renderer renderer;
+  create_window(&renderer);
+  init_vulkan(&renderer);
+  main_loop(renderer.window);
+  clean_up(renderer.window);
 }

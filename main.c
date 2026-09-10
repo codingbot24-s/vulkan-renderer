@@ -1,10 +1,11 @@
 
 
 /*
-  Connect your existing 1280×720 window to Vulkan by creating a VkSurfaceKHR.
-  Window: 1280 × 720
-  Surface creation must succeed.
-  Verify the surface is valid before continuing.
+TODO:Enumerate the available Vulkan physical devices and select a suitable GPU
+for your renderer.
+Testing input: Run on your system with your available
+Vulkan-capable GPU(s). Print the selected GPU name. Verify it supports the
+Vulkan API version required by your renderer.
 */
 
 #include "init.h"
