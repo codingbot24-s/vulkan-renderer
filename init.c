@@ -153,7 +153,7 @@ VkInstance create_instance() {
       .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
       .pEngineName = NULL,
       .engineVersion = 0,
-      .apiVersion = VK_API_VERSION_1_0,
+      .apiVersion = VK_API_VERSION_1_3,
   };
 
   if (!check_required_instance_extension_support()) {
@@ -253,20 +253,22 @@ void create_surface(renderer *renderer) {
   renderer->my_surface = surface;
 }
 
-bool is_device_suitable(VkPhysicalDevice device) {
+bool check_physical_device_props(VkPhysicalDevice device) {
   VkPhysicalDeviceProperties physical_device_props;
   vkGetPhysicalDeviceProperties(device, &physical_device_props);
   if (physical_device_props.apiVersion < VK_API_VERSION_1_0) {
     return false;
   }
+  return true;
+}
 
+bool check_physical_queue_family(VkPhysicalDevice device) {
   uint32_t physical_device_queue_family_count = 0;
   vkGetPhysicalDeviceQueueFamilyProperties(
       device, &physical_device_queue_family_count, NULL);
   if (physical_device_queue_family_count == 0) {
     return false;
   }
-  // MALLOC: FREE THIS
   VkQueueFamilyProperties *physical_device_queue_family_properties = malloc(
       physical_device_queue_family_count * sizeof(VkQueueFamilyProperties));
   if (!physical_device_queue_family_properties) {
@@ -290,20 +292,21 @@ bool is_device_suitable(VkPhysicalDevice device) {
     return false;
   }
 
-  /// ADDONOFFSTREAM: from here
+  free(physical_device_queue_family_properties);
+  return true;
+}
+
+bool check_physical_extension(VkPhysicalDevice device) {
   uint32_t device_extension_prop_count = 0;
   if (vkEnumerateDeviceExtensionProperties(
           device, NULL, &device_extension_prop_count, NULL) != VK_SUCCESS) {
     fprintf(stderr, "cant get the device extension count \n");
-    free(physical_device_queue_family_properties);
     return false;
   }
-  /// MALLOC: FREE_THIS
   VkExtensionProperties *available_device_extension =
       malloc(device_extension_prop_count * sizeof(VkExtensionProperties));
   if (!available_device_extension) {
     fprintf(stderr, "cant allocate the extension properties buffer \n");
-    free(physical_device_queue_family_properties);
     return false;
   }
 
@@ -312,7 +315,6 @@ bool is_device_suitable(VkPhysicalDevice device) {
           available_device_extension) != VK_SUCCESS) {
 
     fprintf(stderr, "cant get the available device extension\n");
-    free(physical_device_queue_family_properties);
     free(available_device_extension);
     return false;
   }
@@ -327,7 +329,6 @@ bool is_device_suitable(VkPhysicalDevice device) {
       }
     }
     if (!required_extension_found) {
-      free(physical_device_queue_family_properties);
       free(available_device_extension);
       fprintf(
           stderr,
@@ -337,8 +338,53 @@ bool is_device_suitable(VkPhysicalDevice device) {
     }
   }
 
-  free(physical_device_queue_family_properties);
   free(available_device_extension);
+  return true;
+}
+
+bool check_physical_device_features(VkPhysicalDevice device) {
+  VkPhysicalDeviceVulkan13Features vk13_physical_device_features;
+  vk13_physical_device_features.sType =
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+  vk13_physical_device_features.pNext = NULL;
+
+  VkPhysicalDeviceVulkan11Features vk11_physical_device_features;
+  vk11_physical_device_features.sType =
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+  vk11_physical_device_features.pNext = &vk13_physical_device_features;
+
+  VkPhysicalDeviceFeatures2 vk_phsical_device_features2;
+  vk_phsical_device_features2.sType =
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+  vk_phsical_device_features2.pNext = &vk11_physical_device_features;
+  vkGetPhysicalDeviceFeatures2(device, &vk_phsical_device_features2);
+  vkGetPhysicalDeviceFeatures2(device, &vk_phsical_device_features2);
+
+  if (!vk11_physical_device_features.shaderDrawParameters) {
+    return false;
+  }
+  if (!vk13_physical_device_features.dynamicRendering) {
+    return false;
+  }
+
+  return true;
+}
+bool is_device_suitable(VkPhysicalDevice device) {
+  if (!check_physical_device_props(device)) {
+    return false;
+  }
+
+  if (!check_physical_queue_family(device)) {
+    return false;
+  }
+  /// ADDONOFFSTREAM: from here
+  if (!check_physical_extension(device)) {
+    return false;
+  }
+  if (!check_physical_device_features(device)) {
+    fprintf(stderr, "cant get the available device extension\n");
+    return false;
+  }
   return true;
 }
 
