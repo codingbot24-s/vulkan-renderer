@@ -256,7 +256,7 @@ void create_surface(renderer *renderer) {
 bool check_physical_device_props(VkPhysicalDevice device) {
   VkPhysicalDeviceProperties physical_device_props;
   vkGetPhysicalDeviceProperties(device, &physical_device_props);
-  if (physical_device_props.apiVersion < VK_API_VERSION_1_0) {
+  if (physical_device_props.apiVersion < VK_API_VERSION_1_3) {
     return false;
   }
   printf("Selected device is %s \n", physical_device_props.deviceName);
