@@ -2,6 +2,8 @@
 // Created by saad on 9/6/26.
 //
 
+#include <complex.h>
+#include <time.h>
 #include <vulkan/vulkan_core.h>
 #define GLFW_INCLUDE_VULKAN
 #include "init.h"
@@ -264,6 +266,7 @@ bool check_physical_device_props(VkPhysicalDevice device) {
 }
 
 bool check_physical_queue_family(VkPhysicalDevice device) {
+  /// this is property count
   uint32_t physical_device_queue_family_count = 0;
   vkGetPhysicalDeviceQueueFamilyProperties(
       device, &physical_device_queue_family_count, NULL);
@@ -319,7 +322,6 @@ bool check_physical_extension(VkPhysicalDevice device) {
     free(available_device_extension);
     return false;
   }
-
   for (int i = 0; i < required_device_extension_count; ++i) {
     bool required_extension_found = false;
     for (int j = 0; j < device_extension_prop_count; ++j) {
@@ -344,10 +346,16 @@ bool check_physical_extension(VkPhysicalDevice device) {
 }
 
 bool check_physical_device_features(VkPhysicalDevice device) {
+  VkPhysicalDeviceExtendedDynamicStateFeaturesEXT
+      vk_physical_device_extended_dstate_features;
+  vk_physical_device_extended_dstate_features.sType =
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT;
+  vk_physical_device_extended_dstate_features.pNext = NULL;
   VkPhysicalDeviceVulkan13Features vk13_physical_device_features;
   vk13_physical_device_features.sType =
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
-  vk13_physical_device_features.pNext = NULL;
+  vk13_physical_device_features.pNext =
+      &vk_physical_device_extended_dstate_features;
 
   VkPhysicalDeviceVulkan11Features vk11_physical_device_features;
   vk11_physical_device_features.sType =
@@ -358,7 +366,7 @@ bool check_physical_device_features(VkPhysicalDevice device) {
   vk_phsical_device_features2.sType =
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
   vk_phsical_device_features2.pNext = &vk11_physical_device_features;
-  vkGetPhysicalDeviceFeatures2(device, &vk_phsical_device_features2);
+
   vkGetPhysicalDeviceFeatures2(device, &vk_phsical_device_features2);
 
   if (!vk11_physical_device_features.shaderDrawParameters) {
@@ -368,8 +376,12 @@ bool check_physical_device_features(VkPhysicalDevice device) {
     return false;
   }
 
+  if (!vk_physical_device_extended_dstate_features.extendedDynamicState) {
+    return false;
+  }
   return true;
 }
+
 bool is_device_suitable(VkPhysicalDevice device) {
   if (!check_physical_device_props(device)) {
     return false;
@@ -378,7 +390,7 @@ bool is_device_suitable(VkPhysicalDevice device) {
   if (!check_physical_queue_family(device)) {
     return false;
   }
-  /// ADDONOFFSTREAM: from here
+
   if (!check_physical_extension(device)) {
     return false;
   }
@@ -391,8 +403,7 @@ bool is_device_suitable(VkPhysicalDevice device) {
 
 /// NOTE: we can also pick the device by score
 void pick_physical_device(renderer *renderer) {
-  VkPhysicalDevice my_pdevice = VK_NULL_HANDLE;
-
+  renderer->my_physical_device = VK_NULL_HANDLE;
   uint32_t physical_devices_count = 0;
   vkEnumeratePhysicalDevices(renderer->my_vk_instance, &physical_devices_count,
                              NULL);
@@ -412,35 +423,121 @@ void pick_physical_device(renderer *renderer) {
   if (vkEnumeratePhysicalDevices(renderer->my_vk_instance,
                                  &physical_devices_count,
                                  available_devices) != 0) {
+    free(available_devices);
     fprintf(stderr, "Error getting physical devices");
     return;
   }
 
   for (int i = 0; i < physical_devices_count; ++i) {
     if (is_device_suitable(available_devices[i])) {
-      my_pdevice = available_devices[i];
-      /// should we call free here also ?
+      renderer->my_physical_device = available_devices[i];
+      free(available_devices);
       break;
     }
   }
 
-  if (my_pdevice == VK_NULL_HANDLE) {
+  if (renderer->my_physical_device == VK_NULL_HANDLE) {
     fprintf(stderr, "failed to find a suitable gpu");
     free(available_devices);
     return;
   }
 }
 
+void create_logical_device(renderer *renderer) {
+  uint32_t physical_device_queue_family_count = 0;
+  vkGetPhysicalDeviceQueueFamilyProperties(
+      renderer->my_physical_device, &physical_device_queue_family_count, NULL);
+
+  VkQueueFamilyProperties *physical_device_queue_family_props = malloc(
+      physical_device_queue_family_count * sizeof(VkQueueFamilyProperties));
+  if (!physical_device_queue_family_props) {
+    fprintf(stderr, "cant allocate for physical device properties \n");
+    return;
+  }
+
+  vkGetPhysicalDeviceQueueFamilyProperties(renderer->my_physical_device,
+                                           &physical_device_queue_family_count,
+                                           physical_device_queue_family_props);
+
+  /// queue family index that support graphics
+  uint32_t queue_family_index = -1;
+  for (int i = 0; i < physical_device_queue_family_count; ++i) {
+    if ((physical_device_queue_family_props[i].queueFlags &
+         VK_QUEUE_GRAPHICS_BIT) != 0) {
+      queue_family_index = i;
+      break;
+    }
+  }
+  if (queue_family_index == -1) {
+    return;
+  }
+
+  VkDeviceQueueCreateInfo device_queue_create_info = {0};
+  device_queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+  device_queue_create_info.queueCount = 1;
+  device_queue_create_info.queueFamilyIndex = queue_family_index;
+  float queue_priority = 0.5f;
+  device_queue_create_info.pQueuePriorities = &queue_priority;
+
+  VkPhysicalDeviceExtendedDynamicStateFeaturesEXT
+      vk_physical_device_extended_dstate_features = {0};
+  vk_physical_device_extended_dstate_features.sType =
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT;
+  vk_physical_device_extended_dstate_features.pNext = NULL;
+  vk_physical_device_extended_dstate_features.extendedDynamicState = true;
+
+  VkPhysicalDeviceVulkan13Features vk13_physical_device_features = {0};
+  vk13_physical_device_features.sType =
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+  vk13_physical_device_features.pNext =
+      &vk_physical_device_extended_dstate_features;
+  vk13_physical_device_features.dynamicRendering = true;
+  VkPhysicalDeviceVulkan11Features vk11_physical_device_features = {0};
+
+  vk11_physical_device_features.sType =
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+  vk11_physical_device_features.pNext = &vk13_physical_device_features;
+  vk11_physical_device_features.shaderDrawParameters = true;
+
+  VkPhysicalDeviceFeatures2 physical_device_features_2 = {0};
+  physical_device_features_2.sType =
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+  physical_device_features_2.pNext = &vk11_physical_device_features;
+
+  VkDeviceCreateInfo device_create_info = {
+      .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+      .pNext = &physical_device_features_2,
+      .queueCreateInfoCount = 1,
+      .pQueueCreateInfos = &device_queue_create_info,
+      .enabledExtensionCount = required_device_extension_count,
+      .ppEnabledExtensionNames = requiredDeviceExtension,
+  };
+
+  VkDevice mydevice = renderer->my_device;
+  mydevice = VK_NULL_HANDLE;
+  if (vkCreateDevice(renderer->my_physical_device, &device_create_info, NULL,
+                     &mydevice) != VK_SUCCESS) {
+    fprintf(stderr, "cant create the logical device \n");
+    return;
+  }
+
+  renderer->my_device = mydevice;
+  VkQueue graphics_queue = {0};
+  vkGetDeviceQueue(renderer->my_device, queue_family_index, 0, &graphics_queue);
+}
+
 void init_vulkan(renderer *renderer) {
   renderer->my_vk_instance = create_instance();
   setup_debug_messenger(renderer->my_vk_instance);
   pick_physical_device(renderer);
+  create_logical_device(renderer);
   create_surface(renderer);
 }
 
 void run_app() {
   renderer renderer;
   create_window(&renderer);
+
   init_vulkan(&renderer);
   main_loop(renderer.window);
   clean_up(renderer.window);

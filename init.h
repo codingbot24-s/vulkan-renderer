@@ -11,6 +11,9 @@ typedef struct renderer {
   GLFWwindow *window;
   VkInstance my_vk_instance;
   VkSurfaceKHR my_surface;
+  VkPhysicalDevice my_physical_device;
+  /// Name logical device ?
+  VkDevice my_device;
 } renderer;
 void run_app();
 #endif // VULKAN_RENDERER_INIT_H
