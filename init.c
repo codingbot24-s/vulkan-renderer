@@ -2,8 +2,6 @@
 // Created by saad on 9/6/26.
 //
 
-#include <complex.h>
-#include <time.h>
 #include <vulkan/vulkan_core.h>
 #define GLFW_INCLUDE_VULKAN
 #include "init.h"
@@ -529,9 +527,9 @@ void create_logical_device(renderer *renderer) {
 void init_vulkan(renderer *renderer) {
   renderer->my_vk_instance = create_instance();
   setup_debug_messenger(renderer->my_vk_instance);
+  create_surface(renderer);
   pick_physical_device(renderer);
   create_logical_device(renderer);
-  create_surface(renderer);
 }
 
 void run_app() {
