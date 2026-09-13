@@ -2,6 +2,7 @@
 // Created by saad on 9/6/26.
 //
 
+#include <vulkan/vulkan_core.h>
 #define GLFW_INCLUDE_VULKAN
 #include "init.h"
 #include "window.h"
@@ -560,34 +561,32 @@ choose_swap_surface_format(VkSurfaceFormatKHR *available_formats,
   return choosen_surface_format;
 }
 
-bool check_for_default_mode(VkPresentModeKHR default_mode,
-                            VkPresentModeKHR *available_modes,
-                            uint32_t presentation_mode_count) {
-
-  bool default_mode_found = false;
-  for (int i = 0; i < presentation_mode_count; ++i) {
-    if (available_modes[i] == default_mode) {
-      default_mode_found = true;
-      break;
+VkPresentModeKHR check_for_default_mode(VkPresentModeKHR *available_modes,
+                                        uint32_t presentation_mode_count) {
+  for (uint32_t i = 0; i < presentation_mode_count; ++i) {
+    if (available_modes[i] == VK_PRESENT_MODE_FIFO_KHR) {
+      return VK_PRESENT_MODE_FIFO_KHR;
     }
   }
-  if (default_mode) {
-    return true;
-  }
 
-  return false;
+  return VK_PRESENT_MODE_FIFO_KHR;
 }
 
 VkPresentModeKHR choose_swap_present_mode(VkPresentModeKHR *presentation_modes,
                                           uint32_t presentation_mode_count) {
 
-  VkPresentModeKHR default_mode = check_for_default_mode(
-      VK_PRESENT_MODE_FIFO_KHR, presentation_modes, presentation_mode_count);
-  if (!default_mode) {
-    return;
-  }
-  /// we will continue from here
+  VkPresentModeKHR default_mode =
+      check_for_default_mode(presentation_modes, presentation_mode_count);
+  VkPresentModeKHR chossen_presentation_mode = {0};
   for (int i = 0; i < presentation_mode_count; ++i) {
+    if (presentation_modes[i] == VK_PRESENT_MODE_MAILBOX_KHR) {
+      chossen_presentation_mode = presentation_modes[i];
+      break;
+    }
+  }
+
+  if (chossen_presentation_mode == VK_PRESENT_MODE_MAILBOX_KHR) {
+    return chossen_presentation_mode;
   }
 
   return default_mode;
