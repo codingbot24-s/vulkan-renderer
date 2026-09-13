@@ -2,7 +2,6 @@
 // Created by saad on 9/6/26.
 //
 
-#include <vulkan/vulkan_core.h>
 #define GLFW_INCLUDE_VULKAN
 #include "init.h"
 #include "window.h"
@@ -55,7 +54,6 @@ bool check_required_instance_extension_support() {
     fprintf(stderr, "cant allocate for enabled extension \n");
     return false;
   }
-
   for (int i = 0; i < required_instance_extension_count; ++i) {
     enabled_extensions[i] = required_extensions[i];
   }
@@ -280,16 +278,18 @@ bool check_physical_queue_family(VkPhysicalDevice device) {
       device, &physical_device_queue_family_count,
       physical_device_queue_family_properties);
 
+  uint32_t iqf_support_graphics = -1;
   bool graphics_property = false;
   for (int i = 0; i < physical_device_queue_family_count; ++i) {
     if (physical_device_queue_family_properties[i].queueFlags &
         VK_QUEUE_GRAPHICS_BIT) {
       graphics_property = true;
+      iqf_support_graphics = i;
       break;
     }
   }
 
-  if (!graphics_property) {
+  if (!graphics_property || iqf_support_graphics == -1) {
     free(physical_device_queue_family_properties);
     return false;
   }
@@ -410,7 +410,7 @@ void pick_physical_device(renderer *renderer) {
     fprintf(stderr, "failed to find GPUs with Vulkan support! \n");
     return;
   }
-  /// MALLOC: FREE THIS
+
   VkPhysicalDevice *available_devices =
       malloc(physical_devices_count * sizeof(VkPhysicalDevice));
   if (!available_devices) {
@@ -441,7 +441,19 @@ void pick_physical_device(renderer *renderer) {
   }
 }
 
+bool is_support_surface(renderer *renderer, uint32_t q_index) {
+  VkBool32 is_supported = VK_FALSE;
+  vkGetPhysicalDeviceSurfaceSupportKHR(renderer->my_physical_device, q_index,
+                                       renderer->my_surface, &is_supported);
+  if (!is_supported) {
+    return false;
+  }
+
+  return true;
+}
+
 void create_logical_device(renderer *renderer) {
+  /// NOTE: quering devcie is repeated change this
   uint32_t physical_device_queue_family_count = 0;
   vkGetPhysicalDeviceQueueFamilyProperties(
       renderer->my_physical_device, &physical_device_queue_family_count, NULL);
@@ -461,7 +473,8 @@ void create_logical_device(renderer *renderer) {
   uint32_t queue_family_index = -1;
   for (int i = 0; i < physical_device_queue_family_count; ++i) {
     if ((physical_device_queue_family_props[i].queueFlags &
-         VK_QUEUE_GRAPHICS_BIT) != 0) {
+         VK_QUEUE_GRAPHICS_BIT) != 0 &&
+        is_support_surface(renderer, i)) {
       queue_family_index = i;
       break;
     }
@@ -522,6 +535,131 @@ void create_logical_device(renderer *renderer) {
   renderer->my_device = mydevice;
   VkQueue graphics_queue = {0};
   vkGetDeviceQueue(renderer->my_device, queue_family_index, 0, &graphics_queue);
+
+  renderer->my_queue = graphics_queue;
+}
+
+VkSurfaceFormatKHR
+choose_swap_surface_format(VkSurfaceFormatKHR *available_formats,
+                           uint32_t available_format_count) {
+  VkSurfaceFormatKHR choosen_surface_format = {0};
+  for (int i = 0; i < available_format_count; ++i) {
+    if (available_formats[i].format == VK_FORMAT_R8G8B8A8_SRGB &&
+        available_formats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+      choosen_surface_format.format = available_formats[i].format;
+      choosen_surface_format.colorSpace = available_formats[i].colorSpace;
+    }
+  }
+
+  if (choosen_surface_format.format == 0 ||
+      choosen_surface_format.colorSpace == 0) {
+    choosen_surface_format.format = available_formats[0].format;
+    choosen_surface_format.colorSpace = available_formats[0].colorSpace;
+  }
+
+  return choosen_surface_format;
+}
+
+bool check_for_default_mode(VkPresentModeKHR default_mode,
+                            VkPresentModeKHR *available_modes,
+                            uint32_t presentation_mode_count) {
+
+  bool default_mode_found = false;
+  for (int i = 0; i < presentation_mode_count; ++i) {
+    if (available_modes[i] == default_mode) {
+      default_mode_found = true;
+      break;
+    }
+  }
+  if (default_mode) {
+    return true;
+  }
+
+  return false;
+}
+
+VkPresentModeKHR choose_swap_present_mode(VkPresentModeKHR *presentation_modes,
+                                          uint32_t presentation_mode_count) {
+
+  VkPresentModeKHR default_mode = check_for_default_mode(
+      VK_PRESENT_MODE_FIFO_KHR, presentation_modes, presentation_mode_count);
+  if (!default_mode) {
+    return;
+  }
+  /// we will continue from here
+  for (int i = 0; i < presentation_mode_count; ++i) {
+  }
+
+  return default_mode;
+}
+
+void create_swapchain(renderer *renderer) {
+
+  VkSurfaceCapabilitiesKHR capabilities = {0};
+  VkResult res = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+      renderer->my_physical_device, renderer->my_surface, &capabilities);
+  if (res != VK_SUCCESS) {
+    fprintf(stderr, "cant get the surface capabilities %u \n", res);
+    return;
+  }
+  uint32_t surface_format_count = 0;
+  res = vkGetPhysicalDeviceSurfaceFormatsKHR(renderer->my_physical_device,
+                                             renderer->my_surface,
+                                             &surface_format_count, NULL);
+  if (res != VK_SUCCESS) {
+    fprintf(stderr, "cant get the surface count %u \n", res);
+    return;
+  }
+
+  VkSurfaceFormatKHR *surface_formats =
+      malloc(surface_format_count * sizeof(VkSurfaceFormatKHR));
+  if (!surface_formats) {
+    fprintf(stderr, "cant allocate for surface formats \n");
+    return;
+  }
+
+  res = vkGetPhysicalDeviceSurfaceFormatsKHR(
+      renderer->my_physical_device, renderer->my_surface, &surface_format_count,
+      surface_formats);
+  if (res != VK_SUCCESS) {
+    fprintf(stderr, "cant get the surface formats %u \n", res);
+    free(surface_formats);
+    return;
+  }
+  VkSurfaceFormatKHR choosen_surface_format =
+      choose_swap_surface_format(surface_formats, surface_format_count);
+
+  uint32_t presentation_mode_count = 0;
+  res = vkGetPhysicalDeviceSurfacePresentModesKHR(
+      renderer->my_physical_device, renderer->my_surface,
+      &presentation_mode_count, NULL);
+
+  if (res != VK_SUCCESS) {
+    fprintf(stderr, "cant get the presentation counts %u \n", res);
+    free(surface_formats);
+    return;
+  }
+
+  VkPresentModeKHR *presentation_modes =
+      malloc(presentation_mode_count * sizeof(VkPresentModeKHR));
+  if (!presentation_modes) {
+    fprintf(stderr, "cant allocate for presentation mode \n");
+    free(surface_formats);
+    return;
+  }
+  res = vkGetPhysicalDeviceSurfacePresentModesKHR(
+      renderer->my_physical_device, renderer->my_surface,
+      &presentation_mode_count, presentation_modes);
+
+  if (res != VK_SUCCESS) {
+    fprintf(stderr, "cant get the presentation modes %u \n", res);
+    free(surface_formats);
+    free(presentation_modes);
+    return;
+  }
+
+  VkPresentModeKHR choosen_presentation_mode =
+      choose_swap_present_mode(presentation_modes, presentation_mode_count);
 }
 
 void init_vulkan(renderer *renderer) {
@@ -530,6 +668,7 @@ void init_vulkan(renderer *renderer) {
   create_surface(renderer);
   pick_physical_device(renderer);
   create_logical_device(renderer);
+  create_swapchain(renderer);
 }
 
 void run_app() {

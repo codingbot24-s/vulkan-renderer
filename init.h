@@ -12,8 +12,8 @@ typedef struct renderer {
   VkInstance my_vk_instance;
   VkSurfaceKHR my_surface;
   VkPhysicalDevice my_physical_device;
-  /// Name logical device ?
   VkDevice my_device;
+  VkQueue my_queue;
 } renderer;
 void run_app();
 #endif // VULKAN_RENDERER_INIT_H
