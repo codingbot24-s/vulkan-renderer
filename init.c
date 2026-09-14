@@ -566,20 +566,23 @@ void create_logical_device(renderer *renderer) {
 
 VkSurfaceFormatKHR choose_swap_surface_format(renderer *renderer) {
   VkResult res;
+  VkSurfaceFormatKHR err_format = {VK_FORMAT_UNDEFINED,
+                                   VK_COLOR_SPACE_SRGB_NONLINEAR_KHR};
+
   uint32_t surface_format_count = 0;
   res = vkGetPhysicalDeviceSurfaceFormatsKHR(renderer->my_physical_device,
                                              renderer->my_surface,
                                              &surface_format_count, NULL);
   if (res != VK_SUCCESS) {
     fprintf(stderr, "cant get the surface count %u \n", res);
-    return;
+    return err_format;
   }
 
   VkSurfaceFormatKHR *surface_formats =
       malloc(surface_format_count * sizeof(VkSurfaceFormatKHR));
   if (!surface_formats) {
     fprintf(stderr, "cant allocate for surface formats \n");
-    return;
+    return err_format;
   }
 
   res = vkGetPhysicalDeviceSurfaceFormatsKHR(
@@ -588,7 +591,7 @@ VkSurfaceFormatKHR choose_swap_surface_format(renderer *renderer) {
   if (res != VK_SUCCESS) {
     fprintf(stderr, "cant get the surface formats %u \n", res);
     free(surface_formats);
-    return;
+    return err_format;
   }
 
   VkSurfaceFormatKHR choosen_surface_format = {0};
@@ -631,14 +634,14 @@ VkPresentModeKHR choose_swap_present_mode(renderer *renderer) {
 
   if (res != VK_SUCCESS) {
     fprintf(stderr, "cant get the presentation counts %u \n", res);
-    return;
+    return VK_PRESENT_MODE_FIFO_KHR;
   }
 
   VkPresentModeKHR *presentation_modes =
       malloc(presentation_mode_count * sizeof(VkPresentModeKHR));
   if (!presentation_modes) {
     fprintf(stderr, "cant allocate for presentation mode \n");
-    return;
+    return VK_PRESENT_MODE_FIFO_KHR;
   }
   res = vkGetPhysicalDeviceSurfacePresentModesKHR(
       renderer->my_physical_device, renderer->my_surface,
@@ -647,7 +650,7 @@ VkPresentModeKHR choose_swap_present_mode(renderer *renderer) {
   if (res != VK_SUCCESS) {
     fprintf(stderr, "cant get the presentation modes %u \n", res);
     free(presentation_modes);
-    return;
+    return VK_PRESENT_MODE_FIFO_KHR;
   }
 
   VkPresentModeKHR default_mode =
@@ -679,6 +682,33 @@ VkExtent2D choose_swap_extent_mode(VkSurfaceCapabilitiesKHR capabilities,
         capabilities.maxImageExtent.width);
   clamp(height, capabilities.minImageExtent.height,
         capabilities.maxImageExtent.height);
+}
+
+void setup_images(renderer *renderer) {
+  uint32_t swapchain_image_count = 0;
+  VkResult res;
+  res = vkGetSwapchainImagesKHR(renderer->my_device, renderer->my_swapchain,
+                                &swapchain_image_count, NULL);
+
+  if (res != VK_SUCCESS) {
+    fprintf(stderr, ":cant get the image count for swapchain %u \n", res);
+    return;
+  }
+  VkImage *images = malloc(swapchain_image_count * sizeof(VkImage));
+  if (!images) {
+    fprintf(stderr, ":cant allocated for getting images \n");
+    return;
+  }
+  res = vkGetSwapchainImagesKHR(renderer->my_device, renderer->my_swapchain,
+                                &swapchain_image_count, images);
+
+  if (res != VK_SUCCESS) {
+    free(images);
+    fprintf(stderr, ":cant get the images for swapchain %u \n", res);
+    return;
+  }
+
+  renderer->swapchain_images = images;
 }
 
 void create_swapchain(renderer *renderer) {
@@ -723,6 +753,8 @@ void create_swapchain(renderer *renderer) {
     fprintf(stderr, "Cant create the swapchain %u \n", res);
     return;
   }
+
+  setup_images(renderer);
 }
 void init_vulkan(renderer *renderer) {
   renderer->my_vk_instance = create_instance();
