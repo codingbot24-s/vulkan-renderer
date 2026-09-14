@@ -21,6 +21,10 @@ typedef struct renderer {
   VkSurfaceFormatKHR surface_format;
   VkImageView *swapchain_image_views;
   uint32_t swapchain_image_count;
+  VkCommandPool command_pool;
+  uint32_t graphics_queue_index;
+  VkCommandBuffer cmd_buff;
 } renderer;
+
 void run_app();
 #endif // VULKAN_RENDERER_INIT_H

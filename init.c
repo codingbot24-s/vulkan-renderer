@@ -560,7 +560,7 @@ void create_logical_device(renderer *renderer) {
   renderer->my_device = mydevice;
   VkQueue graphics_queue = {0};
   vkGetDeviceQueue(renderer->my_device, queue_family_index, 0, &graphics_queue);
-
+  renderer->graphics_queue_index = queue_family_index;
   renderer->my_queue = graphics_queue;
 }
 
@@ -795,6 +795,41 @@ void create_image_views(renderer *renderer) {
   }
 }
 
+void create_command_pool(renderer *renderer) {
+  VkCommandPoolCreateInfo cmd_pool_create_info = {
+      .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+      .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+      .queueFamilyIndex = renderer->graphics_queue_index,
+  };
+
+  VkResult res = vkCreateCommandPool(renderer->my_device, &cmd_pool_create_info,
+                                     NULL, &renderer->command_pool);
+
+  if (res != VK_SUCCESS) {
+    fprintf(stderr, "Cant create the command pool");
+
+    return;
+  }
+}
+
+void create_command_buffer(renderer *renderer) {
+  VkCommandBufferAllocateInfo cmd_buff_alloc_info = {
+      .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+      .commandPool = renderer->command_pool,
+      .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+      .commandBufferCount = 1,
+  };
+
+  VkResult res = vkAllocateCommandBuffers(
+      renderer->my_device, &cmd_buff_alloc_info, &renderer->cmd_buff);
+
+  if (res != VK_SUCCESS) {
+    fprintf(stderr, "Cant allocate the command buffer \n");
+
+    return;
+  }
+}
+
 void init_vulkan(renderer *renderer) {
   renderer->my_vk_instance = create_instance();
   setup_debug_messenger(renderer->my_vk_instance);
@@ -803,6 +838,8 @@ void init_vulkan(renderer *renderer) {
   create_logical_device(renderer);
   create_swapchain(renderer);
   create_image_views(renderer);
+  create_command_pool(renderer);
+  create_command_buffer(renderer);
 }
 
 void run_app() {
