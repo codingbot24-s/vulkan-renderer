@@ -5,7 +5,6 @@
   device. Testing input: Select the required graphics queue family. Retrieve the
   graphics queue. Verify VkDevice and VkQueue creation succeeds.
 
-
   Create the Vulkan swapchain (VkSwapchainKHR) for your surface.
   Testing input:
   Window: 1280 × 720

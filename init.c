@@ -33,6 +33,30 @@ static const char *requiredDeviceExtension[] = {
 
 static uint32_t required_device_extension_count = 1;
 
+/* Helper functions */
+uint32_t clamp(uint32_t value, uint32_t low, uint32_t high) {
+  const uint32_t t = value < low ? low : value;
+  return t > high ? high : t;
+}
+
+uint32_t max(uint32_t a, uint32_t b) {
+  if (a > b) {
+    return a;
+  }
+
+  return b;
+}
+
+uint32_t choose_min_swap_image_count(VkSurfaceCapabilitiesKHR capabilities) {
+  uint32_t min_image_count = max(3, capabilities.minImageCount);
+  if ((0 < capabilities.maxImageCount) &&
+      (capabilities.maxImageCount < min_image_count)) {
+    min_image_count = capabilities.maxImageCount;
+  }
+
+  return min_image_count;
+}
+
 bool check_required_instance_extension_support() {
 
   static uint32_t required_instance_extension_count = 0;
@@ -540,78 +564,8 @@ void create_logical_device(renderer *renderer) {
   renderer->my_queue = graphics_queue;
 }
 
-VkSurfaceFormatKHR
-choose_swap_surface_format(VkSurfaceFormatKHR *available_formats,
-                           uint32_t available_format_count) {
-  VkSurfaceFormatKHR choosen_surface_format = {0};
-  for (int i = 0; i < available_format_count; ++i) {
-    if (available_formats[i].format == VK_FORMAT_R8G8B8A8_SRGB &&
-        available_formats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-      choosen_surface_format.format = available_formats[i].format;
-      choosen_surface_format.colorSpace = available_formats[i].colorSpace;
-    }
-  }
-
-  if (choosen_surface_format.format == 0 ||
-      choosen_surface_format.colorSpace == 0) {
-    choosen_surface_format.format = available_formats[0].format;
-    choosen_surface_format.colorSpace = available_formats[0].colorSpace;
-  }
-
-  return choosen_surface_format;
-}
-
-VkPresentModeKHR check_for_default_mode(VkPresentModeKHR *available_modes,
-                                        uint32_t presentation_mode_count) {
-  for (uint32_t i = 0; i < presentation_mode_count; ++i) {
-    if (available_modes[i] == VK_PRESENT_MODE_FIFO_KHR) {
-      return VK_PRESENT_MODE_FIFO_KHR;
-    }
-  }
-
-  return VK_PRESENT_MODE_FIFO_KHR;
-}
-
-VkPresentModeKHR choose_swap_present_mode(VkPresentModeKHR *presentation_modes,
-                                          uint32_t presentation_mode_count) {
-
-  VkPresentModeKHR default_mode =
-      check_for_default_mode(presentation_modes, presentation_mode_count);
-  VkPresentModeKHR chossen_presentation_mode = {0};
-  for (int i = 0; i < presentation_mode_count; ++i) {
-    if (presentation_modes[i] == VK_PRESENT_MODE_MAILBOX_KHR) {
-      chossen_presentation_mode = presentation_modes[i];
-      break;
-    }
-  }
-
-  if (chossen_presentation_mode == VK_PRESENT_MODE_MAILBOX_KHR) {
-    return chossen_presentation_mode;
-  }
-
-  return default_mode;
-}
-
-VkExtent2D choose_swap_extent_mode(VkSurfaceCapabilitiesKHR capabilities,
-                                   renderer *renderer) {
-  if (capabilities.currentExtent.width != UINT32_MAX) {
-    return capabilities.currentExtent;
-  }
-
-  int width, height;
-  glfwGetFramebufferSize(renderer->window, &width, &height);
-  /// now just the clamp the values
-}
-
-void create_swapchain(renderer *renderer) {
-
-  VkSurfaceCapabilitiesKHR capabilities = {0};
-  VkResult res = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
-      renderer->my_physical_device, renderer->my_surface, &capabilities);
-  if (res != VK_SUCCESS) {
-    fprintf(stderr, "cant get the surface capabilities %u \n", res);
-    return;
-  }
+VkSurfaceFormatKHR choose_swap_surface_format(renderer *renderer) {
+  VkResult res;
   uint32_t surface_format_count = 0;
   res = vkGetPhysicalDeviceSurfaceFormatsKHR(renderer->my_physical_device,
                                              renderer->my_surface,
@@ -636,8 +590,39 @@ void create_swapchain(renderer *renderer) {
     free(surface_formats);
     return;
   }
-  VkSurfaceFormatKHR choosen_surface_format =
-      choose_swap_surface_format(surface_formats, surface_format_count);
+
+  VkSurfaceFormatKHR choosen_surface_format = {0};
+  for (int i = 0; i < surface_format_count; ++i) {
+    if (surface_formats[i].format == VK_FORMAT_R8G8B8A8_SRGB &&
+        surface_formats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+      choosen_surface_format.format = surface_formats[i].format;
+      choosen_surface_format.colorSpace = surface_formats[i].colorSpace;
+    }
+  }
+
+  if (choosen_surface_format.format == 0 ||
+      choosen_surface_format.colorSpace == 0) {
+    choosen_surface_format.format = surface_formats[0].format;
+    choosen_surface_format.colorSpace = surface_formats[0].colorSpace;
+  }
+
+  return choosen_surface_format;
+}
+
+VkPresentModeKHR check_for_default_mode(VkPresentModeKHR *available_modes,
+                                        uint32_t presentation_mode_count) {
+  for (uint32_t i = 0; i < presentation_mode_count; ++i) {
+    if (available_modes[i] == VK_PRESENT_MODE_FIFO_KHR) {
+      return VK_PRESENT_MODE_FIFO_KHR;
+    }
+  }
+
+  return VK_PRESENT_MODE_FIFO_KHR;
+}
+
+VkPresentModeKHR choose_swap_present_mode(renderer *renderer) {
+
+  VkResult res;
 
   uint32_t presentation_mode_count = 0;
   res = vkGetPhysicalDeviceSurfacePresentModesKHR(
@@ -646,7 +631,6 @@ void create_swapchain(renderer *renderer) {
 
   if (res != VK_SUCCESS) {
     fprintf(stderr, "cant get the presentation counts %u \n", res);
-    free(surface_formats);
     return;
   }
 
@@ -654,7 +638,6 @@ void create_swapchain(renderer *renderer) {
       malloc(presentation_mode_count * sizeof(VkPresentModeKHR));
   if (!presentation_modes) {
     fprintf(stderr, "cant allocate for presentation mode \n");
-    free(surface_formats);
     return;
   }
   res = vkGetPhysicalDeviceSurfacePresentModesKHR(
@@ -663,15 +646,84 @@ void create_swapchain(renderer *renderer) {
 
   if (res != VK_SUCCESS) {
     fprintf(stderr, "cant get the presentation modes %u \n", res);
-    free(surface_formats);
     free(presentation_modes);
     return;
   }
 
-  VkPresentModeKHR choosen_presentation_mode =
-      choose_swap_present_mode(presentation_modes, presentation_mode_count);
+  VkPresentModeKHR default_mode =
+      check_for_default_mode(presentation_modes, presentation_mode_count);
+  VkPresentModeKHR chossen_presentation_mode = {0};
+  for (int i = 0; i < presentation_mode_count; ++i) {
+    if (presentation_modes[i] == VK_PRESENT_MODE_MAILBOX_KHR) {
+      chossen_presentation_mode = presentation_modes[i];
+      break;
+    }
+  }
+
+  if (chossen_presentation_mode == VK_PRESENT_MODE_MAILBOX_KHR) {
+    return chossen_presentation_mode;
+  }
+
+  return default_mode;
 }
 
+VkExtent2D choose_swap_extent_mode(VkSurfaceCapabilitiesKHR capabilities,
+                                   renderer *renderer) {
+  if (capabilities.currentExtent.width != UINT32_MAX) {
+    return capabilities.currentExtent;
+  }
+  int width, height;
+  glfwGetFramebufferSize(renderer->window, &width, &height);
+
+  clamp(width, capabilities.minImageExtent.width,
+        capabilities.maxImageExtent.width);
+  clamp(height, capabilities.minImageExtent.height,
+        capabilities.maxImageExtent.height);
+}
+
+void create_swapchain(renderer *renderer) {
+
+  VkSurfaceCapabilitiesKHR capabilities = {0};
+  VkResult res = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+      renderer->my_physical_device, renderer->my_surface, &capabilities);
+  if (res != VK_SUCCESS) {
+    fprintf(stderr, "cant get the surface capabilities %u \n", res);
+    return;
+  }
+  /// Resolution of Images in swapchain
+  VkExtent2D swap_extent = choose_swap_extent_mode(capabilities, renderer);
+  uint32_t min_image_count = choose_min_swap_image_count(capabilities);
+  /// choosen swap_chain_surface_format
+  VkSurfaceFormatKHR choosen_surface_format =
+      choose_swap_surface_format(renderer);
+
+  VkPresentModeKHR choosen_presentation_mode =
+      choose_swap_present_mode(renderer);
+
+  VkSwapchainCreateInfoKHR swapchain_create_info = {
+      .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+      .surface = renderer->my_surface,
+      .minImageCount = min_image_count,
+      .imageFormat = choosen_surface_format.format,
+      .imageColorSpace = choosen_surface_format.colorSpace,
+      .imageExtent = swap_extent,
+      .imageArrayLayers = 1,
+      .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+      .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
+      .preTransform = capabilities.currentTransform,
+      .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+      .presentMode = choosen_presentation_mode,
+      .clipped = true,
+      .oldSwapchain = NULL,
+  };
+  res = vkCreateSwapchainKHR(renderer->my_device, &swapchain_create_info, NULL,
+                             &renderer->my_swapchain);
+
+  if (res != VK_SUCCESS) {
+    fprintf(stderr, "Cant create the swapchain %u \n", res);
+    return;
+  }
+}
 void init_vulkan(renderer *renderer) {
   renderer->my_vk_instance = create_instance();
   setup_debug_messenger(renderer->my_vk_instance);
