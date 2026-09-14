@@ -6,6 +6,7 @@
 #define VULKAN_RENDERER_INIT_H
 
 #include <GLFW/glfw3.h>
+#include <stdint.h>
 #include <vulkan/vulkan_core.h>
 typedef struct renderer {
   GLFWwindow *window;
@@ -18,6 +19,8 @@ typedef struct renderer {
   VkImage *swapchain_images;
   VkExtent2D swap_extent;
   VkSurfaceFormatKHR surface_format;
+  VkImageView *swapchain_image_views;
+  uint32_t swapchain_image_count;
 } renderer;
 void run_app();
 #endif // VULKAN_RENDERER_INIT_H
