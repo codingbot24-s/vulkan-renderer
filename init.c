@@ -592,6 +592,17 @@ VkPresentModeKHR choose_swap_present_mode(VkPresentModeKHR *presentation_modes,
   return default_mode;
 }
 
+VkExtent2D choose_swap_extent_mode(VkSurfaceCapabilitiesKHR capabilities,
+                                   renderer *renderer) {
+  if (capabilities.currentExtent.width != UINT32_MAX) {
+    return capabilities.currentExtent;
+  }
+
+  int width, height;
+  glfwGetFramebufferSize(renderer->window, &width, &height);
+  /// now just the clamp the values
+}
+
 void create_swapchain(renderer *renderer) {
 
   VkSurfaceCapabilitiesKHR capabilities = {0};
