@@ -678,10 +678,16 @@ VkExtent2D choose_swap_extent_mode(VkSurfaceCapabilitiesKHR capabilities,
   int width, height;
   glfwGetFramebufferSize(renderer->window, &width, &height);
 
-  clamp(width, capabilities.minImageExtent.width,
-        capabilities.maxImageExtent.width);
-  clamp(height, capabilities.minImageExtent.height,
-        capabilities.maxImageExtent.height);
+  width = clamp(width, capabilities.minImageExtent.width,
+                capabilities.maxImageExtent.width);
+  height = clamp(height, capabilities.minImageExtent.height,
+                 capabilities.maxImageExtent.height);
+
+  VkExtent2D extent;
+  extent.width = width;
+  extent.height = height;
+
+  return extent;
 }
 
 void setup_images(renderer *renderer) {
