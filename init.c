@@ -728,10 +728,13 @@ void create_swapchain(renderer *renderer) {
   }
   /// Resolution of Images in swapchain
   VkExtent2D swap_extent = choose_swap_extent_mode(capabilities, renderer);
+  renderer->swap_extent = swap_extent;
+
   uint32_t min_image_count = choose_min_swap_image_count(capabilities);
   /// choosen swap_chain_surface_format
   VkSurfaceFormatKHR choosen_surface_format =
       choose_swap_surface_format(renderer);
+  renderer->surface_format = choosen_surface_format;
 
   VkPresentModeKHR choosen_presentation_mode =
       choose_swap_present_mode(renderer);
