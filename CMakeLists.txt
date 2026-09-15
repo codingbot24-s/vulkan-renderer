@@ -9,7 +9,9 @@ add_executable(vulkan-renderer main.c
         window.h
         constant.h
         init.c
-        init.h)
+        init.h
+        input.h
+        input.c)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 

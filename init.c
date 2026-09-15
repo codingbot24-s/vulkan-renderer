@@ -2,9 +2,11 @@
 // Created by saad on 9/6/26.
 //
 
+#include <stddef.h>
 #include <vulkan/vulkan_core.h>
 #define GLFW_INCLUDE_VULKAN
 #include "init.h"
+#include "input.h"
 #include "window.h"
 #include <GLFW/glfw3.h>
 #include <stdbool.h>
@@ -830,6 +832,41 @@ void create_command_buffer(renderer *renderer) {
   }
 }
 
+VkResult create_shader_module(const char *code, renderer *renderer,
+                              size_t code_size) {
+
+  VkShaderModuleCreateInfo shader_module_info = {
+      .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+      .pNext = NULL,
+      .codeSize = code_size,
+      .pCode = (uint32_t *)code,
+  };
+
+  VkShaderModule shader_module;
+  VkResult res = vkCreateShaderModule(renderer->my_device, &shader_module_info,
+                                      NULL, &shader_module);
+  if (res != VK_SUCCESS) {
+    fprintf(stderr, "Cant create the shader module \n");
+    /// NOTE: return the correct error
+    return VK_ERROR_INITIALIZATION_FAILED;
+  }
+
+  renderer->my_shader_module = shader_module;
+  return VK_SUCCESS;
+}
+
+void create_graphics_pipeline(renderer *renderer) {
+  const char *file_path = "/home/saad/code/c/vulkan-renderer/shader/slang.spv";
+  char *code_buffer;
+  size_t code_size;
+  read_file(file_path, code_buffer, &code_size);
+
+  if (create_shader_module(code_buffer, renderer, code_size) != VK_SUCCESS) {
+    free(code_buffer);
+    return;
+  }
+}
+
 void init_vulkan(renderer *renderer) {
   renderer->my_vk_instance = create_instance();
   setup_debug_messenger(renderer->my_vk_instance);
@@ -838,8 +875,10 @@ void init_vulkan(renderer *renderer) {
   create_logical_device(renderer);
   create_swapchain(renderer);
   create_image_views(renderer);
+  /// added offstream
   create_command_pool(renderer);
   create_command_buffer(renderer);
+  create_graphics_pipeline(renderer);
 }
 
 void run_app() {
