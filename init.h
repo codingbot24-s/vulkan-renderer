@@ -25,6 +25,7 @@ typedef struct renderer {
   uint32_t graphics_queue_index;
   VkCommandBuffer cmd_buff;
   VkPipelineLayout pipeline_layout;
+  VkPipeline graphics_pipeline;
 } renderer;
 
 void run_app();

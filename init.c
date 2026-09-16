@@ -73,7 +73,7 @@ bool check_required_instance_extension_support() {
   if (enable_validation_layers) {
     total_extensions++;
   }
-  /// TODO: we would need to implement the vector aka dynamic
+  /// TODO: we would need to implement the vector aka
   /// array for pushing extension
   /// MALLOC: FREE THIS
   enabled_extensions = malloc(total_extensions * sizeof(char *));
@@ -879,22 +879,29 @@ void create_graphics_pipeline(renderer *renderer) {
                                                     frag_stage_info};
 
   VkPipelineVertexInputStateCreateInfo vertex_input_info;
+  vertex_input_info.sType =
+      VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
   VkPipelineInputAssemblyStateCreateInfo input_assembly = {
+      .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
       .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
   };
   /// check this if work with commenting this line
-  /// VkPipelineViewportStateCreateInfo viewportstate = {.viewportCount = 1,
-  //   .scissorCount = 1.
-  /// };
+  VkPipelineViewportStateCreateInfo viewportstate = {.viewportCount = 1,
+                                                     .scissorCount = 1.};
   VkDynamicState dynamic_state[] = {VK_DYNAMIC_STATE_VIEWPORT,
                                     VK_DYNAMIC_STATE_SCISSOR};
   VkPipelineDynamicStateCreateInfo dynamic_state_create_info = {
+      .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+      /// is this passsing the pointer size and thats why we are getting the
+      /// error
+      //
       .dynamicStateCount = sizeof(dynamic_state),
       /// NOTE: stack allocated pointer
       .pDynamicStates = dynamic_state,
   };
 
   VkPipelineRasterizationStateCreateInfo rasterizer = {
+      .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
       .depthClampEnable = VK_FALSE,
       .rasterizerDiscardEnable = VK_FALSE,
       .polygonMode = VK_POLYGON_MODE_FILL,
@@ -917,6 +924,7 @@ void create_graphics_pipeline(renderer *renderer) {
   };
 
   VkPipelineLayoutCreateInfo pipeline_layoutinfo = {
+      .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
       .setLayoutCount = 0,
       .pushConstantRangeCount = 0,
   };
@@ -927,6 +935,32 @@ void create_graphics_pipeline(renderer *renderer) {
 
   if (res != VK_SUCCESS) {
     fprintf(stderr, "cant create the pipline layout \n");
+    return;
+  }
+
+  VkPipelineRenderingCreateInfo pipe_line_rendering_create_info = {
+      .colorAttachmentCount = 1,
+      .pColorAttachmentFormats = &renderer->surface_format.format,
+  };
+
+  VkGraphicsPipelineCreateInfo graphics_pipeline_create_info = {
+      .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+      .stageCount = 2,
+      .pVertexInputState = &vertex_input_info,
+      .pInputAssemblyState = &input_assembly,
+      .pViewportState = &viewportstate,
+      .pRasterizationState = &rasterizer,
+      .pColorBlendState = &color_blending,
+      .pDynamicState = &dynamic_state_create_info,
+      .layout = renderer->pipeline_layout,
+      .renderPass = NULL,
+  };
+
+  res = vkCreateGraphicsPipelines(renderer->my_device, NULL, 1,
+                                  &graphics_pipeline_create_info, NULL,
+                                  &renderer->graphics_pipeline);
+  if (res != VK_SUCCESS) {
+    fprintf(stderr, "cant create the graphics pipeline %u \n", res);
     return;
   }
 }
