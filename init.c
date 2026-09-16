@@ -832,8 +832,8 @@ void create_command_buffer(renderer *renderer) {
   }
 }
 
-VkResult create_shader_module(uint32_t *code, renderer *renderer,
-                              size_t code_size) {
+int create_shader_module(uint32_t *code, renderer *renderer, size_t code_size,
+                         VkShaderModule *shader_module) {
 
   VkShaderModuleCreateInfo shader_module_info = {
       .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
@@ -841,15 +841,15 @@ VkResult create_shader_module(uint32_t *code, renderer *renderer,
       .codeSize = code_size,
       .pCode = code,
   };
-  /// this returns the vksucces but we need to check if we got the shader module
-  /// or not
+
   VkResult res = vkCreateShaderModule(renderer->my_device, &shader_module_info,
-                                      NULL, &renderer->my_shader_module);
+                                      NULL, shader_module);
+
   if (res != VK_SUCCESS) {
-    fprintf(stderr, "Cant create the shader module \n");
-    return VK_ERROR_INITIALIZATION_FAILED;
+    return -1;
   }
-  return VK_SUCCESS;
+
+  return 0;
 }
 
 void create_graphics_pipeline(renderer *renderer) {
@@ -858,7 +858,9 @@ void create_graphics_pipeline(renderer *renderer) {
   size_t code_size;
   read_file(file_path, &code_buffer, &code_size);
 
-  if (create_shader_module(code_buffer, renderer, code_size) != VK_SUCCESS) {
+  VkShaderModule shader_module;
+  if (create_shader_module(code_buffer, renderer, code_size, &shader_module) !=
+      0) {
     free(code_buffer);
     return;
   }
@@ -875,6 +877,58 @@ void create_graphics_pipeline(renderer *renderer) {
 
   VkPipelineShaderStageCreateInfo shaderStages[] = {shader_stage_info,
                                                     frag_stage_info};
+
+  VkPipelineVertexInputStateCreateInfo vertex_input_info;
+  VkPipelineInputAssemblyStateCreateInfo input_assembly = {
+      .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+  };
+  /// check this if work with commenting this line
+  /// VkPipelineViewportStateCreateInfo viewportstate = {.viewportCount = 1,
+  //   .scissorCount = 1.
+  /// };
+  VkDynamicState dynamic_state[] = {VK_DYNAMIC_STATE_VIEWPORT,
+                                    VK_DYNAMIC_STATE_SCISSOR};
+  VkPipelineDynamicStateCreateInfo dynamic_state_create_info = {
+      .dynamicStateCount = sizeof(dynamic_state),
+      /// NOTE: stack allocated pointer
+      .pDynamicStates = dynamic_state,
+  };
+
+  VkPipelineRasterizationStateCreateInfo rasterizer = {
+      .depthClampEnable = VK_FALSE,
+      .rasterizerDiscardEnable = VK_FALSE,
+      .polygonMode = VK_POLYGON_MODE_FILL,
+      .cullMode = VK_CULL_MODE_BACK_BIT,
+      .depthBiasEnable = VK_FALSE,
+      .lineWidth = 1.0f,
+  };
+
+  VkPipelineColorBlendAttachmentState color_attachment_state = {
+      .blendEnable = VK_FALSE,
+      .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+                        VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
+  };
+
+  VkPipelineColorBlendStateCreateInfo color_blending = {
+      .logicOpEnable = VK_FALSE,
+      .logicOp = VK_LOGIC_OP_COPY,
+      .attachmentCount = 1,
+      .pAttachments = &color_attachment_state,
+  };
+
+  VkPipelineLayoutCreateInfo pipeline_layoutinfo = {
+      .setLayoutCount = 0,
+      .pushConstantRangeCount = 0,
+  };
+
+  VkResult res =
+      vkCreatePipelineLayout(renderer->my_device, &pipeline_layoutinfo, NULL,
+                             &renderer->pipeline_layout);
+
+  if (res != VK_SUCCESS) {
+    fprintf(stderr, "cant create the pipline layout \n");
+    return;
+  }
 }
 
 void init_vulkan(renderer *renderer) {

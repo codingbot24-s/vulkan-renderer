@@ -24,7 +24,7 @@ typedef struct renderer {
   VkCommandPool command_pool;
   uint32_t graphics_queue_index;
   VkCommandBuffer cmd_buff;
-  VkShaderModule my_shader_module;
+  VkPipelineLayout pipeline_layout;
 } renderer;
 
 void run_app();
