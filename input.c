@@ -3,38 +3,36 @@
 //
 
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-char *read_file(const char *path, const char *out_buffer, size_t *buffer_size) {
+void read_file(const char *path, uint32_t **out_buffer, size_t *buffer_size) {
   FILE *file = fopen(path, "rb");
   if (file == NULL) {
     fprintf(stderr, "Cant open the file \n");
-    return NULL;
+    return;
   }
 
   fseek(file, 0, SEEK_END);
   size_t f_size = ftell(file);
   rewind(file);
 
-  size_t alloctaion_size = f_size * sizeof(char) + 1;
-  /// NOTE:MALLOC
-  char *buff = malloc(alloctaion_size);
-  if (!buff) {
-    fprintf(stderr, "Cant allocate the buffer \n");
-    return NULL;
+  *out_buffer = malloc(f_size);
+
+  if (!out_buffer) {
+
+    fprintf(stderr, "cant allocate the buffer for reading spirv \n");
+    return;
   }
 
-  size_t bytes_read = fread(buff, sizeof(char), f_size, file);
-  if (bytes_read < f_size) {
-    free(buff);
-    fprintf(stderr, "cant read the file \n");
-    return NULL;
+  size_t bytes_readed = fread(*out_buffer, 1, f_size, file);
+
+  if (bytes_readed < f_size) {
+    fclose(file);
+    fprintf(stderr, "readed bytes not matched \n");
+    return;
   }
 
-  buff[bytes_read + 1] = '\0';
-  out_buffer = buff;
-  *buffer_size = alloctaion_size;
-  fclose(file);
-  return buff;
+  *buffer_size = f_size;
 }

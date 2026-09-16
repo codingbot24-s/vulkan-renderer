@@ -832,39 +832,49 @@ void create_command_buffer(renderer *renderer) {
   }
 }
 
-VkResult create_shader_module(const char *code, renderer *renderer,
+VkResult create_shader_module(uint32_t *code, renderer *renderer,
                               size_t code_size) {
 
   VkShaderModuleCreateInfo shader_module_info = {
       .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
       .pNext = NULL,
       .codeSize = code_size,
-      .pCode = (uint32_t *)code,
+      .pCode = code,
   };
-
-  VkShaderModule shader_module;
+  /// this returns the vksucces but we need to check if we got the shader module
+  /// or not
   VkResult res = vkCreateShaderModule(renderer->my_device, &shader_module_info,
-                                      NULL, &shader_module);
+                                      NULL, &renderer->my_shader_module);
   if (res != VK_SUCCESS) {
     fprintf(stderr, "Cant create the shader module \n");
-    /// NOTE: return the correct error
     return VK_ERROR_INITIALIZATION_FAILED;
   }
-
-  renderer->my_shader_module = shader_module;
   return VK_SUCCESS;
 }
 
 void create_graphics_pipeline(renderer *renderer) {
   const char *file_path = "/home/saad/code/c/vulkan-renderer/shader/slang.spv";
-  char *code_buffer;
+  uint32_t *code_buffer = NULL;
   size_t code_size;
-  read_file(file_path, code_buffer, &code_size);
+  read_file(file_path, &code_buffer, &code_size);
 
   if (create_shader_module(code_buffer, renderer, code_size) != VK_SUCCESS) {
     free(code_buffer);
     return;
   }
+  VkPipelineShaderStageCreateInfo shader_stage_info = {
+      .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+      .stage = VK_SHADER_STAGE_VERTEX_BIT,
+      .pName = "vertMain"};
+
+  VkPipelineShaderStageCreateInfo frag_stage_info = {
+      .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+      .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
+      .pName = "fragMain",
+  };
+
+  VkPipelineShaderStageCreateInfo shaderStages[] = {shader_stage_info,
+                                                    frag_stage_info};
 }
 
 void init_vulkan(renderer *renderer) {
