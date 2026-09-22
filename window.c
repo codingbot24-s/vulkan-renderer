@@ -1,6 +1,7 @@
 //
 // Created by saad on 9/6/26.
 //
+#include <vulkan/vulkan_core.h>
 #define GLFW_INCLUDE_VULKAN
 #include "constant.h"
 #include "init.h"
@@ -25,6 +26,8 @@ void create_window(renderer *renderer) {
     return;
   }
 }
+
+void draw_frame(renderer *renderer) {}
 
 void main_loop(GLFWwindow *window) {
 

@@ -26,6 +26,11 @@ typedef struct renderer {
   VkCommandBuffer cmd_buff;
   VkPipelineLayout pipeline_layout;
   VkPipeline graphics_pipeline;
+
+  /// sync objects
+  VkSemaphore present_complete_semaphore;
+  VkSemaphore render_finisheds_semaphor;
+  VkFence draw_fence;
 } renderer;
 
 void run_app();

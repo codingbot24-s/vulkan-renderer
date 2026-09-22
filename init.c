@@ -1089,6 +1089,34 @@ VkResult record_cmd_buffer(renderer *renderer, uint32_t image_index) {
   return VK_SUCCESS;
 }
 
+VkResult create_sync_object(renderer *renderer) {
+  VkSemaphoreCreateInfo prsentation_semaphore_info = {0};
+  VkSemaphoreCreateInfo render_finished_semaphore_info = {0};
+
+  VkResult res =
+      vkCreateSemaphore(renderer->my_device, &prsentation_semaphore_info, NULL,
+                        &renderer->present_complete_semaphore);
+  if (res != VK_SUCCESS) {
+    return res;
+  }
+  res = vkCreateSemaphore(renderer->my_device, &render_finished_semaphore_info,
+                          NULL, &renderer->render_finisheds_semaphor);
+
+  if (res != VK_SUCCESS) {
+    return res;
+  }
+  VkFenceCreateInfo draw_fence_info = {0};
+  draw_fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+  res = vkCreateFence(renderer->my_device, &draw_fence_info, NULL,
+                      &renderer->draw_fence);
+
+  if (res != VK_SUCCESS) {
+    return res;
+  }
+
+  return VK_SUCCESS;
+}
+
 void init_vulkan(renderer *renderer) {
   renderer->my_vk_instance = create_instance();
   setup_debug_messenger(renderer->my_vk_instance);
@@ -1100,6 +1128,8 @@ void init_vulkan(renderer *renderer) {
   create_command_pool(renderer);
   create_command_buffer(renderer);
   create_graphics_pipeline(renderer);
+  /// check for returned value
+  create_sync_object(renderer);
 }
 
 void run_app() {
