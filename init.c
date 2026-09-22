@@ -832,8 +832,8 @@ void create_command_buffer(renderer *renderer) {
   }
 }
 
-int create_shader_module(uint32_t *code, renderer *renderer, size_t code_size,
-                         VkShaderModule *shader_module) {
+VkResult create_shader_module(uint32_t *code, renderer *renderer,
+                              size_t code_size, VkShaderModule *shader_module) {
 
   VkShaderModuleCreateInfo shader_module_info = {
       .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
@@ -846,12 +846,11 @@ int create_shader_module(uint32_t *code, renderer *renderer, size_t code_size,
                                       NULL, shader_module);
 
   if (res != VK_SUCCESS) {
-    return -1;
+    return res;
   }
 
-  return 0;
+  return VK_SUCCESS;
 }
-
 void create_graphics_pipeline(renderer *renderer) {
   const char *file_path = "/home/saad/code/c/vulkan-renderer/shader/slang.spv";
   uint32_t *code_buffer = NULL;
@@ -860,43 +859,46 @@ void create_graphics_pipeline(renderer *renderer) {
 
   VkShaderModule shader_module;
   if (create_shader_module(code_buffer, renderer, code_size, &shader_module) !=
-      0) {
+      VK_SUCCESS) {
     free(code_buffer);
     return;
   }
   VkPipelineShaderStageCreateInfo shader_stage_info = {
       .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
       .stage = VK_SHADER_STAGE_VERTEX_BIT,
+      .module = shader_module,
       .pName = "vertMain"};
 
   VkPipelineShaderStageCreateInfo frag_stage_info = {
       .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
       .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
+      .module = shader_module,
       .pName = "fragMain",
   };
 
   VkPipelineShaderStageCreateInfo shaderStages[] = {shader_stage_info,
                                                     frag_stage_info};
 
-  VkPipelineVertexInputStateCreateInfo vertex_input_info;
-  vertex_input_info.sType =
-      VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+  VkPipelineVertexInputStateCreateInfo vertex_input_info = {
+      .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+
+  };
+
   VkPipelineInputAssemblyStateCreateInfo input_assembly = {
       .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
       .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
   };
-  /// check this if work with commenting this line
-  VkPipelineViewportStateCreateInfo viewportstate = {.viewportCount = 1,
-                                                     .scissorCount = 1.};
+  VkPipelineViewportStateCreateInfo viewportstate = {
+      .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+      .viewportCount = 1,
+
+      .scissorCount = 1};
   VkDynamicState dynamic_state[] = {VK_DYNAMIC_STATE_VIEWPORT,
                                     VK_DYNAMIC_STATE_SCISSOR};
   VkPipelineDynamicStateCreateInfo dynamic_state_create_info = {
       .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-      /// is this passsing the pointer size and thats why we are getting the
-      /// error
-      //
-      .dynamicStateCount = sizeof(dynamic_state),
-      /// NOTE: stack allocated pointer
+      /// NOTE: for now we can hardcode this
+      .dynamicStateCount = 2,
       .pDynamicStates = dynamic_state,
   };
 
@@ -917,6 +919,7 @@ void create_graphics_pipeline(renderer *renderer) {
   };
 
   VkPipelineColorBlendStateCreateInfo color_blending = {
+      .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
       .logicOpEnable = VK_FALSE,
       .logicOp = VK_LOGIC_OP_COPY,
       .attachmentCount = 1,
@@ -937,18 +940,26 @@ void create_graphics_pipeline(renderer *renderer) {
     fprintf(stderr, "cant create the pipline layout \n");
     return;
   }
-
   VkPipelineRenderingCreateInfo pipe_line_rendering_create_info = {
+      .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
       .colorAttachmentCount = 1,
       .pColorAttachmentFormats = &renderer->surface_format.format,
+  };
+  VkPipelineMultisampleStateCreateInfo multisampling = {
+      .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+      .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
+      .sampleShadingEnable = VK_FALSE,
   };
 
   VkGraphicsPipelineCreateInfo graphics_pipeline_create_info = {
       .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
       .stageCount = 2,
+      .pStages = shaderStages,
       .pVertexInputState = &vertex_input_info,
       .pInputAssemblyState = &input_assembly,
       .pViewportState = &viewportstate,
+      /// we were missing this structer thats why segfault
+      .pMultisampleState = &multisampling,
       .pRasterizationState = &rasterizer,
       .pColorBlendState = &color_blending,
       .pDynamicState = &dynamic_state_create_info,
@@ -965,6 +976,119 @@ void create_graphics_pipeline(renderer *renderer) {
   }
 }
 
+void transition_image_layout(renderer *renderer, uint32_t image_index,
+                             VkImageLayout old_layout, VkImageLayout new_layout,
+                             VkAccessFlags2 src_access_mask,
+                             VkAccessFlags2 dst_access_mask,
+                             VkPipelineStageFlags2 src_stage_mask,
+                             VkPipelineStageFlags2 dst_stage_mask) {
+  VkImageMemoryBarrier2 barrier = {
+      .srcStageMask = src_stage_mask,
+      .srcAccessMask = src_access_mask,
+      .dstStageMask = dst_stage_mask,
+      .dstAccessMask = dst_access_mask,
+      .oldLayout = old_layout,
+      .newLayout = new_layout,
+      .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+      .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+      .image = renderer->swapchain_images[image_index],
+      .subresourceRange =
+          {
+              .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+              .baseMipLevel = 0,
+              .levelCount = 1,
+              .baseArrayLayer = 0,
+              .layerCount = 1,
+          }
+
+  };
+
+  VkDependencyInfo dependency_info = {
+      .dependencyFlags = {},
+      .imageMemoryBarrierCount = 1,
+      .pImageMemoryBarriers = &barrier,
+  };
+
+  vkCmdPipelineBarrier2(renderer->cmd_buff, &dependency_info);
+}
+
+VkResult record_cmd_buffer(renderer *renderer, uint32_t image_index) {
+  VkCommandBufferBeginInfo cmd_begin_info = {0};
+  VkResult res = vkBeginCommandBuffer(renderer->cmd_buff, &cmd_begin_info);
+
+  if (res != VK_SUCCESS) {
+    return res;
+  }
+
+  transition_image_layout(renderer, image_index, VK_IMAGE_LAYOUT_UNDEFINED,
+                          VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 0,
+                          VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                          VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                          VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT);
+  VkClearColorValue clear_color_value;
+  clear_color_value.float32[0] = 0.0f;
+  clear_color_value.float32[1] = 0.0f;
+  clear_color_value.float32[2] = 0.0f;
+  clear_color_value.float32[3] = 1.0f;
+
+  VkRenderingAttachmentInfo attachment_info = {
+      .clearValue = clear_color_value,
+      .imageView = renderer->swapchain_image_views[image_index],
+      .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+      .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+      .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+  };
+
+  VkRenderingInfo rendering_info = {
+      .renderArea = {.offset =
+                         {
+                             0,
+                             0,
+                         },
+                     .extent = renderer->swap_extent},
+      .layerCount = 1,
+      .colorAttachmentCount = 1,
+      .pColorAttachments = &attachment_info,
+  };
+
+  vkCmdBeginRendering(renderer->cmd_buff, &rendering_info);
+
+  vkCmdBindPipeline(renderer->cmd_buff, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    renderer->graphics_pipeline);
+
+  VkViewport viewport = {0};
+  viewport.height = renderer->swap_extent.height;
+  viewport.width = renderer->swap_extent.width;
+  viewport.x = 0;
+  viewport.y = 0;
+  viewport.minDepth = 0;
+  viewport.maxDepth = 1;
+  vkCmdSetViewport(renderer->cmd_buff, 0, 1, &viewport);
+  VkRect2D scissor = {0};
+  scissor.extent.width = renderer->swap_extent.width;
+  scissor.extent.height = renderer->swap_extent.height;
+
+  vkCmdSetScissor(renderer->cmd_buff, 0, 1, &scissor);
+
+  vkCmdDraw(renderer->cmd_buff, 3, 1, 0, 0);
+
+  vkCmdEndRendering(renderer->cmd_buff);
+
+  transition_image_layout(
+      renderer, image_index, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+      VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, 0,
+      VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+      VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT);
+
+  res = vkEndCommandBuffer(renderer->cmd_buff);
+
+  if (res != VK_SUCCESS) {
+    return res;
+  }
+
+  return VK_SUCCESS;
+}
+
 void init_vulkan(renderer *renderer) {
   renderer->my_vk_instance = create_instance();
   setup_debug_messenger(renderer->my_vk_instance);
@@ -973,7 +1097,6 @@ void init_vulkan(renderer *renderer) {
   create_logical_device(renderer);
   create_swapchain(renderer);
   create_image_views(renderer);
-  /// added offstream
   create_command_pool(renderer);
   create_command_buffer(renderer);
   create_graphics_pipeline(renderer);
