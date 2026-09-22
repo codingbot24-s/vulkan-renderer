@@ -8,6 +8,6 @@
 #include <GLFW/glfw3.h>
 
 void create_window(renderer *renderer);
-void main_loop(GLFWwindow *window);
+void main_loop(GLFWwindow *window, renderer *renderer);
 void clean_up(GLFWwindow *window);
 #endif // VULKAN_RENDERER_WINDOW_H

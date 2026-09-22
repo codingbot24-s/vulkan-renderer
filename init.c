@@ -530,8 +530,9 @@ void create_logical_device(renderer *renderer) {
   vk13_physical_device_features.pNext =
       &vk_physical_device_extended_dstate_features;
   vk13_physical_device_features.dynamicRendering = true;
-  VkPhysicalDeviceVulkan11Features vk11_physical_device_features = {0};
+  vk13_physical_device_features.synchronization2 = true;
 
+  VkPhysicalDeviceVulkan11Features vk11_physical_device_features = {0};
   vk11_physical_device_features.sType =
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
   vk11_physical_device_features.pNext = &vk13_physical_device_features;
@@ -983,6 +984,7 @@ void transition_image_layout(renderer *renderer, uint32_t image_index,
                              VkPipelineStageFlags2 src_stage_mask,
                              VkPipelineStageFlags2 dst_stage_mask) {
   VkImageMemoryBarrier2 barrier = {
+      .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
       .srcStageMask = src_stage_mask,
       .srcAccessMask = src_access_mask,
       .dstStageMask = dst_stage_mask,
@@ -1004,6 +1006,7 @@ void transition_image_layout(renderer *renderer, uint32_t image_index,
   };
 
   VkDependencyInfo dependency_info = {
+      .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
       .dependencyFlags = {},
       .imageMemoryBarrierCount = 1,
       .pImageMemoryBarriers = &barrier,
@@ -1014,6 +1017,7 @@ void transition_image_layout(renderer *renderer, uint32_t image_index,
 
 VkResult record_cmd_buffer(renderer *renderer, uint32_t image_index) {
   VkCommandBufferBeginInfo cmd_begin_info = {0};
+  cmd_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
   VkResult res = vkBeginCommandBuffer(renderer->cmd_buff, &cmd_begin_info);
 
   if (res != VK_SUCCESS) {
@@ -1032,6 +1036,7 @@ VkResult record_cmd_buffer(renderer *renderer, uint32_t image_index) {
   clear_color_value.float32[3] = 1.0f;
 
   VkRenderingAttachmentInfo attachment_info = {
+      .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
       .clearValue = clear_color_value,
       .imageView = renderer->swapchain_image_views[image_index],
       .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -1040,6 +1045,7 @@ VkResult record_cmd_buffer(renderer *renderer, uint32_t image_index) {
   };
 
   VkRenderingInfo rendering_info = {
+      .sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
       .renderArea = {.offset =
                          {
                              0,
@@ -1091,7 +1097,10 @@ VkResult record_cmd_buffer(renderer *renderer, uint32_t image_index) {
 
 VkResult create_sync_object(renderer *renderer) {
   VkSemaphoreCreateInfo prsentation_semaphore_info = {0};
+  prsentation_semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
   VkSemaphoreCreateInfo render_finished_semaphore_info = {0};
+  render_finished_semaphore_info.sType =
+      VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
   VkResult res =
       vkCreateSemaphore(renderer->my_device, &prsentation_semaphore_info, NULL,
@@ -1106,6 +1115,7 @@ VkResult create_sync_object(renderer *renderer) {
     return res;
   }
   VkFenceCreateInfo draw_fence_info = {0};
+  draw_fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
   draw_fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
   res = vkCreateFence(renderer->my_device, &draw_fence_info, NULL,
                       &renderer->draw_fence);
@@ -1137,6 +1147,6 @@ void run_app() {
   create_window(&renderer);
 
   init_vulkan(&renderer);
-  main_loop(renderer.window);
+  main_loop(renderer.window, &renderer);
   clean_up(renderer.window);
 }

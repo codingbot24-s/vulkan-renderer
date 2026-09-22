@@ -34,4 +34,5 @@ typedef struct renderer {
 } renderer;
 
 void run_app();
+VkResult record_cmd_buffer(renderer *renderer, uint32_t image_index);
 #endif // VULKAN_RENDERER_INIT_H
