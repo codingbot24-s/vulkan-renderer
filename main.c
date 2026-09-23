@@ -1,8 +1,10 @@
 
 /// TODO: better structer for the code remove things from one file and split in
 /// multiple files
-/// TODO: add memory arena
-/// /
+/// TODO: add memory arena there are two many mallocs and free in current
+/// codebase it will create the fragmentation problem in our pages
+
+// 1.currently we need array darray and strings and renderer tag
 
 /*
   1. create a graphics pipeline
