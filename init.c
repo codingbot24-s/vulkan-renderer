@@ -903,8 +903,9 @@ void create_graphics_pipeline(renderer *renderer) {
       .pDynamicStates = dynamic_state,
   };
 
-  /// NOTE: the issue was rasterizer was discarding our triangle it was asumming that our triangle is
-  /// back face because of winding thats why we were not seeing any triangle in previous stream
+  /// NOTE: the issue was rasterizer was discarding our triangle it was asumming
+  /// that our triangle is back face because of winding thats why we were not
+  /// seeing any triangle in previous stream
   VkPipelineRasterizationStateCreateInfo rasterizer = {
       .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
       .depthClampEnable = VK_FALSE,
