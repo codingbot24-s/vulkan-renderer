@@ -20,7 +20,11 @@ add_executable(vulkan-renderer main.c
         vk_core/vk_instance.c
         vk_core/include/vk_surface.h
         vk_core/vk_surface.c
-        renderer.h)
+        renderer.h
+        vk_core/include/vk_device.h
+        vk_core/vk_device.c
+        vk_core/include/vk_swapchain.h
+        vk_core/vk_swapchain.c)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 target_compile_definitions(vulkan-renderer PRIVATE
