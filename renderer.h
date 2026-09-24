@@ -1,0 +1,35 @@
+//
+// Created by saad on 9/24/26.
+//
+
+#ifndef VULKAN_RENDERER_RENDERER_H
+#define VULKAN_RENDERER_RENDERER_H
+
+#include <GLFW/glfw3.h>
+#include <stdint.h>
+#include <vulkan/vulkan_core.h>
+typedef struct renderer {
+  GLFWwindow *window;
+  VkInstance my_vk_instance;
+  VkSurfaceKHR my_surface;
+  VkPhysicalDevice my_physical_device;
+  VkDevice my_device;
+  VkQueue my_queue;
+  VkSwapchainKHR my_swapchain;
+  VkImage *swapchain_images;
+  VkExtent2D swap_extent;
+  VkSurfaceFormatKHR surface_format;
+  VkImageView *swapchain_image_views;
+  uint32_t swapchain_image_count;
+  VkCommandPool command_pool;
+  uint32_t graphics_queue_index;
+  VkCommandBuffer cmd_buff;
+  VkPipelineLayout pipeline_layout;
+  VkPipeline graphics_pipeline;
+
+  /// sync objects
+  VkSemaphore present_complete_semaphore;
+  VkSemaphore render_finisheds_semaphor;
+  VkFence draw_fence;
+} renderer;
+#endif // VULKAN_RENDERER_RENDERER_H

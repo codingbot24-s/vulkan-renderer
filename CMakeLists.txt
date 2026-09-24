@@ -15,7 +15,12 @@ add_executable(vulkan-renderer main.c
         memory/rmemory.c
         memory/rmemory.h
         log/loger.h
-        log/loger.c)
+        log/loger.c
+        vk_core/include/vk_instance.h
+        vk_core/vk_instance.c
+        vk_core/include/vk_surface.h
+        vk_core/vk_surface.c
+        renderer.h)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 

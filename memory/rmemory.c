@@ -2,8 +2,8 @@
 // Created by saad on 23/09/26.
 //
 
-#include "../log/loger.h"
 #include "rmemory.h"
+#include "../log/loger.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -48,6 +48,7 @@ void r_free(void *block, size_t size, MEMORY_TAGS mtag) {
 void *r_copy(void *dest, void *src, size_t size) {
   return memcpy(dest, src, size);
 }
+
 void *r_setmem(void *block, uint64_t value, size_t size) {
   return memset(block, value, size);
 }
