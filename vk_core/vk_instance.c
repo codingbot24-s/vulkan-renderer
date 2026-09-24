@@ -171,6 +171,7 @@ VkInstance create_instance() {
     R_FATAL("Cant create the vulkan instance \n");
   }
 
+
 #ifndef NDEBUG
   R_INFO("vulkan instance created \n");
 #endif

@@ -23,7 +23,9 @@ add_executable(vulkan-renderer main.c
         renderer.h)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
+target_compile_definitions(vulkan-renderer PRIVATE
+        $<$<CONFIG:Release>:NDEBUG>
+)
 target_link_libraries(vulkan-renderer PRIVATE glfw vulkan)
 target_compile_options(vulkan-renderer PRIVATE
     -fsanitize=address
