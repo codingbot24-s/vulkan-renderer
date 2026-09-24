@@ -5,7 +5,7 @@
 #include "../renderer.h"
 #include <stdio.h>
 #include <vulkan/vulkan_core.h>
-
+#include <stdbool.h>
 uint32_t max(uint32_t a, uint32_t b) {
   if (a > b) {
     return a;
