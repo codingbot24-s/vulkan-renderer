@@ -13,6 +13,11 @@ uint32_t max(uint32_t a, uint32_t b) {
 
   return b;
 }
+/* Helper functions */
+uint32_t clamp(uint32_t value, uint32_t low, uint32_t high) {
+  const uint32_t t = value < low ? low : value;
+  return t > high ? high : t;
+}
 
 uint32_t choose_min_swap_image_count(VkSurfaceCapabilitiesKHR capabilities) {
   uint32_t min_image_count = max(3, capabilities.minImageCount);

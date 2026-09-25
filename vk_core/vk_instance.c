@@ -208,7 +208,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDebugUtilsMessengerEXT(
 
 void setup_debug_messenger(VkInstance instance) {
   if (!enable_validation_layers) {
-    R_FATAL("validation layer is not enabled \n");
+    return;
   }
 
   VkDebugUtilsMessengerEXT messenger = NULL;
@@ -228,6 +228,6 @@ void setup_debug_messenger(VkInstance instance) {
 
   if (vkCreateDebugUtilsMessengerEXT(instance, &debug_messenger_create_info,
                                      NULL, &messenger) != VK_SUCCESS) {
-    R_FATAL("error creating debug meesenger \n");
+    R_FATAL("error creating debug messenger \n");
   }
 }

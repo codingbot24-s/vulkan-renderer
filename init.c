@@ -17,11 +17,6 @@
 
 #include <stdint.h>
 
-/* Helper functions */
-uint32_t clamp(uint32_t value, uint32_t low, uint32_t high) {
-  const uint32_t t = value < low ? low : value;
-  return t > high ? high : t;
-}
 
 void init_vulkan(renderer *renderer) {
   renderer->my_vk_instance = create_instance();
