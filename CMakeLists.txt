@@ -4,6 +4,7 @@ project(vulkan-renderer LANGUAGES C)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+
 find_package(glfw3 3.3 REQUIRED)
 
 add_executable(vulkan-renderer
@@ -40,6 +41,8 @@ add_executable(vulkan-renderer
         vk_core/vk_graphics.c
         vk_core/include/vk_sync.h
         vk_core/vk_sync.c
+        vk_core/include/vk_vertex_buffer.h
+        vk_core/vk_vertex_buffer.c
 )
 
 set(VULKAN_SDK "/opt/vulkan/1.4.357.1/x86_64")

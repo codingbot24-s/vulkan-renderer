@@ -32,4 +32,6 @@ typedef struct renderer {
   VkSemaphore render_finisheds_semaphor;
   VkFence draw_fence;
 } renderer;
+
+
 #endif // VULKAN_RENDERER_RENDERER_H

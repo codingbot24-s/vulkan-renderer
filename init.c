@@ -17,7 +17,6 @@
 
 #include <stdint.h>
 
-
 void init_vulkan(renderer *renderer) {
   renderer->my_vk_instance = create_instance();
   setup_debug_messenger(renderer->my_vk_instance);
