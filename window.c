@@ -87,14 +87,15 @@ VkResult draw_frame(renderer *renderer) {
 }
 
 void main_loop(GLFWwindow *window, renderer *renderer) {
-
   while (!glfwWindowShouldClose(window)) {
     glfwPollEvents();
     draw_frame(renderer);
   }
+
+
 }
 
-void clean_up(GLFWwindow *window) {
+void clean_up(GLFWwindow * window) {
 
   glfwDestroyWindow(window);
   glfwTerminate();

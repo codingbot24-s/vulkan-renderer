@@ -54,7 +54,6 @@ void check_validation_layer_support() {
   }
   r_free(available_layer, size_for_available_layer, MEM_TAG_RENDERER);
 
-/// TODO: check why this is working in release mode
 #ifndef NDEBUG
   R_INFO("validation layer check passed \n");
 #endif
@@ -137,8 +136,10 @@ void check_required_instance_extension_support() {
 }
 
 VkInstance create_instance() {
+  if (enable_validation_layers) {
+    check_validation_layer_support();
+  }
 
-  check_validation_layer_support();
   VkInstance instance;
   VkApplicationInfo app_info = {
       .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
