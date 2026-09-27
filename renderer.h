@@ -28,10 +28,9 @@ typedef struct renderer {
   VkPipeline graphics_pipeline;
 
   /// sync objects
-  VkSemaphore present_complete_semaphore;
+  VkSemaphore image_available_semaphore;
   VkSemaphore render_finisheds_semaphor;
   VkFence draw_fence;
 } renderer;
-
 
 #endif // VULKAN_RENDERER_RENDERER_H

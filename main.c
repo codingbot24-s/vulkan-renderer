@@ -5,9 +5,7 @@
   1. create a graphics pipeline
   2. record render command
   3. submit and present
-  /// this all is complete
 */
-
 /*
   TODO:
   1. Create Vertex and Index Buffers

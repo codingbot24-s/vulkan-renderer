@@ -3,9 +3,11 @@
 //
 
 #include "../renderer.h"
-#include <stdlib.h>
+#include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <vulkan/vulkan_core.h>
+
 uint32_t max(uint32_t a, uint32_t b) {
   if (a > b) {
     return a;
@@ -47,7 +49,6 @@ void setup_images(renderer *renderer) {
   renderer->swapchain_images = images;
 }
 
-
 VkPresentModeKHR check_for_default_mode(VkPresentModeKHR *available_modes,
                                         uint32_t presentation_mode_count) {
   for (uint32_t i = 0; i < presentation_mode_count; ++i) {
@@ -58,7 +59,6 @@ VkPresentModeKHR check_for_default_mode(VkPresentModeKHR *available_modes,
 
   return VK_PRESENT_MODE_FIFO_KHR;
 }
-
 
 VkPresentModeKHR choose_swap_present_mode(renderer *renderer) {
 
@@ -106,7 +106,6 @@ VkPresentModeKHR choose_swap_present_mode(renderer *renderer) {
 
   return default_mode;
 }
-
 
 uint32_t choose_min_swap_image_count(VkSurfaceCapabilitiesKHR capabilities) {
   uint32_t min_image_count = max(3, capabilities.minImageCount);
