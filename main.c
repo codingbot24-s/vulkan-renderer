@@ -1,5 +1,5 @@
 /// TODO: add memory arena
-/// TODO: 1.currently we need darray and strings and
+/// TODO: 1.currently we need dynamic array and strings and
 
 /*
   1. create a graphics pipeline
