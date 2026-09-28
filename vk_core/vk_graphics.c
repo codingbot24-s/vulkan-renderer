@@ -5,6 +5,8 @@
 #include "./include/vk_graphics.h"
 #include "../input.h"
 #include "../log/loger.h"
+#include "./include/vk_vertex_buffer.h"
+
 VkResult create_shader_module(renderer *renderer, size_t code_size,
                               const uint32_t *code,
                               VkShaderModule *shader_module) {
@@ -64,8 +66,20 @@ void create_graphics_pipeline(renderer *renderer) {
       fragment_shader_stage,
   };
 
+  /// input vertex description binding
+  VkVertexInputAttributeDescription input_attribute_description[2];
+  get_attribute_description(input_attribute_description);
+
+  VkVertexInputBindingDescription binding_description =
+      get_binding_description();
   VkPipelineVertexInputStateCreateInfo vertex_input_state_create_info = {
       .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+      .pNext = NULL,
+      .vertexBindingDescriptionCount = 1,
+      .pVertexBindingDescriptions = &binding_description,
+      /// NOTE: hardcoded 2 change this
+      .vertexAttributeDescriptionCount = 2,
+      .pVertexAttributeDescriptions = input_attribute_description,
   };
   VkPipelineInputAssemblyStateCreateInfo input_assembly_state_create_info = {
       .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,

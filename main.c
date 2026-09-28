@@ -1,13 +1,7 @@
 /// TODO: add memory arena
-/// TODO: 1.currently we need dynamic array and strings and
+/// TODO: 1.we need dynamic array and strings and
 
 /*
-  1. create a graphics pipeline
-  2. record render command
-  3. submit and present
-*/
-/*
-  TODO:
   1. Create Vertex and Index Buffers
   The triangle is rendered from GPU vertex and index buffers.
 

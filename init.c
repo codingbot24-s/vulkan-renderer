@@ -13,6 +13,7 @@
 #include "vk_core/include/vk_surface.h"
 #include "vk_core/include/vk_swapchain.h"
 #include "vk_core/include/vk_sync.h"
+#include "vk_core/include/vk_vertex_buffer.h"
 #include "window.h"
 
 void init_vulkan(renderer *renderer) {
@@ -23,6 +24,7 @@ void init_vulkan(renderer *renderer) {
   create_logical_device(renderer);
   create_swapchain(renderer);
   create_image_views(renderer);
+  create_vertex_buffer(renderer);
   create_command_pool(renderer);
   create_command_buffer(renderer);
   create_graphics_pipeline(renderer);
