@@ -90,6 +90,9 @@ VkResult record_cmd_buffer(renderer *renderer, uint32_t image_index) {
   vkCmdBindPipeline(renderer->cmd_buff, VK_PIPELINE_BIND_POINT_GRAPHICS,
                     renderer->graphics_pipeline);
 
+  VkDeviceSize offsets[1] = {0};
+  vkCmdBindVertexBuffers(renderer->cmd_buff, 0, 1, &renderer->vertex_buffer,
+                         offsets);
   VkViewport viewport = {0};
   viewport.height = renderer->swap_extent.height;
   viewport.width = renderer->swap_extent.width;

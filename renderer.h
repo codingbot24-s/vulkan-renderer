@@ -26,7 +26,9 @@ typedef struct renderer {
   VkCommandBuffer cmd_buff;
   VkPipelineLayout pipeline_layout;
   VkPipeline graphics_pipeline;
+  VkDeviceMemory vertex_buffer_memory;
   VkBuffer vertex_buffer;
+
   /// sync objects
   VkSemaphore image_available_semaphore;
   VkSemaphore render_finisheds_semaphor;

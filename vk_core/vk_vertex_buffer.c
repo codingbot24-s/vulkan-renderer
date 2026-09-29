@@ -4,15 +4,49 @@
 
 #include "include/vk_vertex_buffer.h"
 #include "../log/loger.h"
+#include "../memory/rmemory.h"
 #include "../renderer.h"
 #include "vulkan/vulkan_core.h"
+#include <stdbool.h>
+#include <stdint.h>
 #include <vulkan/vulkan.h>
 
+/// NOTE: we can use glmc also for math
 typedef struct vertex {
   float pos[2];
   float color[3];
 
 } vertex;
+
+uint32_t find_memory_type(uint32_t memory_type,
+                          VkMemoryPropertyFlags required_property_flags,
+                          renderer *renderer) {
+  VkPhysicalDeviceMemoryProperties physical_device_memory_properties;
+  vkGetPhysicalDeviceMemoryProperties(renderer->my_physical_device,
+                                      &physical_device_memory_properties);
+
+  const uint32_t physical_device_memory_type_count =
+      physical_device_memory_properties.memoryTypeCount;
+
+  for (uint32_t memory_index = 0;
+       memory_index < physical_device_memory_type_count; ++memory_index) {
+    const uint32_t memory_type_bits = (1 << memory_index);
+    const bool is_required_memory_type = (memory_type & memory_type_bits);
+
+    const VkMemoryPropertyFlags physical_device_memory_properties_flags =
+        physical_device_memory_properties.memoryTypes[memory_index]
+            .propertyFlags;
+    const bool has_required_properties =
+        (required_property_flags & physical_device_memory_properties_flags) ==
+        required_property_flags;
+
+    if (is_required_memory_type && has_required_properties) {
+      return memory_index;
+    }
+  }
+
+  return -1;
+}
 
 VkVertexInputBindingDescription get_binding_description() {
   return (VkVertexInputBindingDescription){.binding = 0,
@@ -33,12 +67,10 @@ void get_attribute_description(
   attribute_descriptions[1].binding = 0;
   attribute_descriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
   attribute_descriptions[1].offset = sizeof(float) * 2;
-
-  // we cant return this
 }
 
 void create_vertex_buffer(renderer *renderer) {
-  vertex vertices[sizeof(vertex) * 3] = {{{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+  vertex vertices[sizeof(vertex) * 3] = {{{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
                                          {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
                                          {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
 
@@ -59,5 +91,43 @@ void create_vertex_buffer(renderer *renderer) {
   if (res != VK_SUCCESS) {
     R_FATAL("cant create the vertex buffer");
   }
-  /// we will continue from here in the next stream
+
+  VkMemoryRequirements buffer_memory_requirments;
+  vkGetBufferMemoryRequirements(renderer->my_device, renderer->vertex_buffer,
+                                &buffer_memory_requirments);
+
+  VkMemoryAllocateInfo allocate_info = {
+      .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+      .pNext = NULL,
+      .allocationSize = buffer_memory_requirments.size,
+      .memoryTypeIndex =
+          find_memory_type(buffer_memory_requirments.memoryTypeBits,
+                           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                               VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                           renderer)};
+  res = vkAllocateMemory(renderer->my_device, &allocate_info, NULL,
+                         &renderer->vertex_buffer_memory);
+  if (res != VK_SUCCESS) {
+    R_FATAL("cant allocate the memory for vertex buffer in device");
+  }
+
+  res = vkBindBufferMemory(renderer->my_device, renderer->vertex_buffer,
+                           renderer->vertex_buffer_memory, 0);
+  if (res != VK_SUCCESS) {
+    R_FATAL("cant bind the buffer memory");
+  }
+
+  void *data;
+  res = vkMapMemory(renderer->my_device, renderer->vertex_buffer_memory, 0,
+                    buffer_create_info.size, 0, &data);
+
+  if (res != VK_SUCCESS) {
+    R_FATAL("cant mapping memory to host");
+  }
+  r_copy(data, vertices, buffer_create_info.size);
+  vkUnmapMemory(renderer->my_device, renderer->vertex_buffer_memory);
+
+#ifndef NDEBUG
+  R_INFO("vertex buffer created");
+#endif
 }
