@@ -128,7 +128,8 @@ void create_graphics_pipeline(renderer *renderer) {
 
   VkPipelineLayoutCreateInfo pipeline_layoutinfo = {
       .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-      .setLayoutCount = 0,
+      .setLayoutCount = 1,
+      .pSetLayouts = &renderer->descriptor_layout,
       .pushConstantRangeCount = 0,
   };
 

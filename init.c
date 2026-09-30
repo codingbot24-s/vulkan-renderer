@@ -7,6 +7,7 @@
 #include "vk_core/include/vk_command_buffers.h"
 #include "vk_core/include/vk_commandpool.h"
 #include "vk_core/include/vk_device.h"
+#include "vk_core/include/vk_discriptor.h"
 #include "vk_core/include/vk_graphics.h"
 #include "vk_core/include/vk_image.h"
 #include "vk_core/include/vk_instance.h"
@@ -27,6 +28,7 @@ void init_vulkan(renderer *renderer) {
   create_vertex_buffer(renderer);
   create_index_buffer(renderer);
   create_command_pool(renderer);
+  create_descriptorset_layout(renderer);
   create_command_buffer(renderer);
   create_graphics_pipeline(renderer);
   create_sync_object(renderer);

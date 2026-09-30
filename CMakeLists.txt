@@ -49,6 +49,8 @@ add_executable(vulkan-renderer
         vk_core/vk_sync.c
         vk_core/include/vk_vertex_buffer.h
         vk_core/vk_vertex_buffer.c
+        vk_core/include/vk_discriptor.h
+        vk_core/vk_discriptor.c
 )
 
 set(VULKAN_SDK "/opt/vulkan/1.4.357.1/x86_64")
@@ -56,6 +58,9 @@ target_include_directories(vulkan-renderer PRIVATE
         "${VULKAN_SDK}/include"
 )
 
+target_include_directories(vulkan-renderer PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/libs/cglm/include
+)
 target_include_directories(vulkan-renderer PRIVATE
         "$ENV{VULKAN_SDK}/include"
 )

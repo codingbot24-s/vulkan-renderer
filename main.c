@@ -1,19 +1,16 @@
 /// TODO: add memory arena
 /// TODO: 1.we need dynamic array and strings and
-
+/// TODO: staing buffer
 /*
-  1. Create Vertex and Index Buffers
-  The triangle is rendered from GPU vertex and index buffers.
-  /// now our this todo is completed
 
 
-  2. Create a uniform buffer that stores per-frame shader data and make it
+  1. Create a uniform buffer that stores per-frame shader data and make it
   accessible from the graphics pipeline.
   Create one uniform buffer for the current frame.
   Upload a simple value such as a transformation matrix.
   Verify the shader can read the uniform data.
 
-  3.Create the Vulkan descriptor set layout, descriptor pool, and descriptor set
+  2.Create the Vulkan descriptor set layout, descriptor pool, and descriptor set
   required to bind your uniform buffer to the shaders.
   Bind the uniform buffer through a descriptor set.
   Bind the descriptor set during rendering.
