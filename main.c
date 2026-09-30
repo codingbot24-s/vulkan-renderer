@@ -4,6 +4,8 @@
 /*
   1. Create Vertex and Index Buffers
   The triangle is rendered from GPU vertex and index buffers.
+  /// now our this todo is completed
+
 
   2. Create a uniform buffer that stores per-frame shader data and make it
   accessible from the graphics pipeline.

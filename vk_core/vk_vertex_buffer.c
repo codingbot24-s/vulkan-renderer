@@ -70,9 +70,11 @@ void get_attribute_description(
 }
 
 void create_vertex_buffer(renderer *renderer) {
-  vertex vertices[sizeof(vertex) * 3] = {{{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
-                                         {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-                                         {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
+  const vertex vertices[sizeof(vertex) * 3] = {
+      {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+      {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+      {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+      {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}};
 
   VkVertexInputAttributeDescription input_attribute_descriptions[2];
   get_attribute_description(input_attribute_descriptions);
@@ -129,5 +131,66 @@ void create_vertex_buffer(renderer *renderer) {
 
 #ifndef NDEBUG
   R_INFO("vertex buffer created");
+#endif
+}
+
+void create_index_buffer(renderer *renderer) {
+  const uint16_t indices[6] = {0, 1, 2, 2, 3, 0};
+
+  VkBufferCreateInfo index_buffer_info = {
+      .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+      .pNext = NULL,
+      .size = sizeof(indices),
+      .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+      .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+
+  };
+
+  VkResult res = vkCreateBuffer(renderer->my_device, &index_buffer_info, NULL,
+                                &renderer->index_buffer);
+  if (res != VK_SUCCESS) {
+    R_FATAL("cant create the index buffer");
+  }
+
+  VkMemoryRequirements index_buffer_memory_requirements;
+  vkGetBufferMemoryRequirements(renderer->my_device, renderer->index_buffer,
+                                &index_buffer_memory_requirements);
+
+  VkMemoryAllocateInfo index_buffer_allocation_info = {
+      .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+      NULL,
+      index_buffer_memory_requirements.size,
+
+      find_memory_type(index_buffer_memory_requirements.memoryTypeBits,
+                       VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                           VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                       renderer)};
+
+  res = vkAllocateMemory(renderer->my_device, &index_buffer_allocation_info,
+                         NULL, &renderer->index_buffer_memory);
+
+  if (res != VK_SUCCESS) {
+    R_FATAL("cannot allocate memory for index buffer");
+  }
+
+  res = vkBindBufferMemory(renderer->my_device, renderer->index_buffer,
+                           renderer->index_buffer_memory, 0);
+
+  if (res != VK_SUCCESS) {
+    R_FATAL("cannot bind the index buffer with memory");
+  }
+
+  void *mapped_memory;
+  res = vkMapMemory(renderer->my_device, renderer->index_buffer_memory, 0,
+                    index_buffer_info.size, 0, &mapped_memory);
+
+  if (res != VK_SUCCESS) {
+    R_FATAL("cannot map the memory");
+  }
+  r_copy(mapped_memory, (void *)indices, sizeof(indices));
+  vkUnmapMemory(renderer->my_device, renderer->index_buffer_memory);
+
+#ifndef NDEBUG
+  R_INFO("index buffer created ");
 #endif
 }

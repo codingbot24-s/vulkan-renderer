@@ -25,6 +25,7 @@ void init_vulkan(renderer *renderer) {
   create_swapchain(renderer);
   create_image_views(renderer);
   create_vertex_buffer(renderer);
+  create_index_buffer(renderer);
   create_command_pool(renderer);
   create_command_buffer(renderer);
   create_graphics_pipeline(renderer);

@@ -4,6 +4,7 @@
 
 #include "../log/loger.h"
 #include "include/vk_commandpool.h"
+#include "vulkan/vulkan_core.h"
 
 void transition_image_layout(renderer *renderer, uint32_t image_index,
                              VkImageLayout old_layout, VkImageLayout new_layout,
@@ -93,6 +94,9 @@ VkResult record_cmd_buffer(renderer *renderer, uint32_t image_index) {
   VkDeviceSize offsets[1] = {0};
   vkCmdBindVertexBuffers(renderer->cmd_buff, 0, 1, &renderer->vertex_buffer,
                          offsets);
+
+  vkCmdBindIndexBuffer(renderer->cmd_buff, renderer->index_buffer, 0,
+                       VK_INDEX_TYPE_UINT16);
   VkViewport viewport = {0};
   viewport.height = renderer->swap_extent.height;
   viewport.width = renderer->swap_extent.width;
@@ -106,8 +110,8 @@ VkResult record_cmd_buffer(renderer *renderer, uint32_t image_index) {
   scissor.extent.height = renderer->swap_extent.height;
 
   vkCmdSetScissor(renderer->cmd_buff, 0, 1, &scissor);
-
-  vkCmdDraw(renderer->cmd_buff, 3, 1, 0, 0);
+  /// NOTE: hardcoded 6 for rectangle change this
+  vkCmdDrawIndexed(renderer->cmd_buff, 6, 1, 0, 0, 0);
 
   vkCmdEndRendering(renderer->cmd_buff);
 

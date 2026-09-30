@@ -13,4 +13,6 @@ VkVertexInputBindingDescription get_binding_description();
 void get_attribute_description(
     VkVertexInputAttributeDescription *attribute_descriptions);
 
+void create_index_buffer(renderer *renderer);
+
 #endif // VULKAN_RENDERER_VK_VERTEX_BUFFER_H
