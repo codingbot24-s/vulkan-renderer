@@ -7,5 +7,6 @@
 
 #define WIDTH 1280
 #define HEIGHT 720
+#define MAX_FRAME_IN_FLIGHT 2
 
 #endif // VULKAN_RENDERER_CONSTANT_H

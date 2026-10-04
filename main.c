@@ -1,8 +1,8 @@
 /// TODO: add memory arena
 /// TODO: 1.we need dynamic array and strings and
 /// TODO: staing buffer
-/*
 
+/*
 
   1. Create a uniform buffer that stores per-frame shader data and make it
   accessible from the graphics pipeline.

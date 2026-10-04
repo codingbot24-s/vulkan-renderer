@@ -47,10 +47,16 @@ add_executable(vulkan-renderer
         vk_core/vk_graphics.c
         vk_core/include/vk_sync.h
         vk_core/vk_sync.c
-        vk_core/include/vk_vertex_buffer.h
-        vk_core/vk_vertex_buffer.c
+        vk_core/include/vk_buffer.h
+        vk_core/vk_buffer.c
         vk_core/include/vk_discriptor.h
         vk_core/vk_discriptor.c
+        vk_core/include/vk_vertex_buffer.h
+        vk_core/vk_vertex_buffer.c
+        vk_core/include/vk_index_buffer.h
+        vk_core/vk_index_buffer.c
+        vk_core/include/vk_uniform_buffer.h
+        vk_core/vk_uniform_buffer.c
 )
 
 set(VULKAN_SDK "/opt/vulkan/1.4.357.1/x86_64")
@@ -72,6 +78,7 @@ target_compile_definitions(vulkan-renderer PRIVATE
 target_link_libraries(vulkan-renderer PRIVATE
         glfw
         /lib/x86_64-linux-gnu/libvulkan.so.1
+        m
 )
 
 target_compile_options(vulkan-renderer PRIVATE

@@ -8,6 +8,7 @@
 #include "./vk_core/include/vk_command_buffers.h"
 #include "constant.h"
 #include "renderer.h"
+#include "vk_core/include/vk_uniform_buffer.h"
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 
@@ -30,43 +31,57 @@ void create_window(renderer *renderer) {
 }
 VkResult draw_frame(renderer *renderer) {
 
-  VkResult res = vkWaitForFences(renderer->my_device, 1, &renderer->draw_fence,
+  VkResult res = vkWaitForFences(renderer->my_device, 1,
+                                 &renderer->draw_fence[renderer->frame_index],
                                  VK_TRUE, UINT64_MAX);
   if (res != VK_SUCCESS) {
     R_FATAL("wait for fence failed");
   }
 
-  res = vkResetFences(renderer->my_device, 1, &renderer->draw_fence);
+  res = vkResetFences(renderer->my_device, 1,
+                      &renderer->draw_fence[renderer->frame_index]);
   if (res != VK_SUCCESS) {
     R_FATAL("wait for fence failed");
   }
-
-  uint32_t image_index = 0;
-  res = vkAcquireNextImageKHR(renderer->my_device, renderer->my_swapchain,
-                              UINT64_MAX, renderer->image_available_semaphore,
-                              NULL, &image_index);
+  /// this call need the fence in unsignaled state
+  // uint32_t image_index = 0;
+  res = vkAcquireNextImageKHR(renderer->my_device,renderer->my_swapchain,UINT64_MAX,renderer->image_available_semaphore[renderer->frame_index],NULL,&renderer->image_index);
   if (res != VK_SUCCESS) {
     R_FATAL("cant get the image");
   }
 
-  res = record_cmd_buffer(renderer, image_index);
+  update_uniform_buffer(renderer->frame_index, renderer);
+  // res =
+  //     vkResetCommandBuffer(renderer->command_buffers[renderer->frame_index],
+  //     0);
+  //
+  // if (res != VK_SUCCESS) {
+  //   R_FATAL("error reseting the command buffer");
+  // }
+
+  res = record_cmd_buffer(renderer, renderer->image_index);
   if (res != VK_SUCCESS) {
     R_FATAL("cant get the image");
   }
+
   VkPipelineStageFlags wait_stage_flag =
       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
   VkSubmitInfo submit_info = {
       .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
       .pNext = NULL,
       .waitSemaphoreCount = 1,
-      .pWaitSemaphores = &renderer->image_available_semaphore,
+      .pWaitSemaphores =
+          &renderer->image_available_semaphore[renderer->frame_index],
       .pWaitDstStageMask = &wait_stage_flag,
       .commandBufferCount = 1,
-      .pCommandBuffers = &renderer->cmd_buff,
+      .pCommandBuffers = &renderer->command_buffers[renderer->frame_index],
       .signalSemaphoreCount = 1,
-      .pSignalSemaphores = &renderer->render_finisheds_semaphor,
+      .pSignalSemaphores =
+          &renderer->render_finished_semaphore[renderer->image_index],
   };
-  res = vkQueueSubmit(renderer->my_queue, 1, &submit_info, NULL);
+
+  /// changed so
+  res = vkQueueSubmit(renderer->my_queue, 1, &submit_info, renderer->draw_fence[renderer->frame_index]);
   if (res != VK_SUCCESS) {
     R_FATAL("cant get the image");
   }
@@ -74,16 +89,20 @@ VkResult draw_frame(renderer *renderer) {
       .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
       .pNext = NULL,
       .waitSemaphoreCount = 1,
-      .pWaitSemaphores = &renderer->render_finisheds_semaphor,
+      .pWaitSemaphores =
+          &renderer->render_finished_semaphore[renderer->image_index],
       .swapchainCount = 1,
       .pSwapchains = &renderer->my_swapchain,
-      .pImageIndices = &image_index,
+      .pImageIndices = &renderer->image_index,
   };
-  vkQueuePresentKHR(renderer->my_queue, &present_info);
+  res = vkQueuePresentKHR(renderer->my_queue, &present_info);
   if (res != VK_SUCCESS) {
     R_FATAL("presentation error ");
   }
-  return VK_SUCCESS;
+
+  renderer->frame_index = (renderer->frame_index + 1) % MAX_FRAME_IN_FLIGHT;
+  //
+  // return VK_SUCCESS;
 }
 
 void main_loop(GLFWwindow *window, renderer *renderer) {

@@ -23,7 +23,7 @@ typedef struct renderer {
   uint32_t swapchain_image_count;
   VkCommandPool command_pool;
   uint32_t graphics_queue_index;
-  VkCommandBuffer cmd_buff;
+  VkCommandBuffer *command_buffers;
   VkPipelineLayout pipeline_layout;
   VkPipeline graphics_pipeline;
   VkDeviceMemory vertex_buffer_memory;
@@ -32,10 +32,19 @@ typedef struct renderer {
   VkDeviceMemory index_buffer_memory;
 
   VkDescriptorSetLayout descriptor_layout;
+  VkBuffer *uniform_buffers;
+  VkDeviceMemory *uniform_buffer_memory;
+  void **uniform_buffer_mapped;
+
+  VkDescriptorPool descriptor_pool;
+  VkDescriptorSet *descriptor_sets;
   /// sync objects
-  VkSemaphore image_available_semaphore;
-  VkSemaphore render_finisheds_semaphor;
-  VkFence draw_fence;
+
+  uint32_t frame_index;
+  uint32_t image_index;
+  VkSemaphore *image_available_semaphore;
+  VkSemaphore *render_finished_semaphore;
+  VkFence *draw_fence;
 } renderer;
 
 #endif // VULKAN_RENDERER_RENDERER_H

@@ -1,18 +1,15 @@
 //
-// Created by saad on 9/26/26.
+// Created by saad on 10/2/26.
 //
 
 #ifndef VULKAN_RENDERER_VK_VERTEX_BUFFER_H
 #define VULKAN_RENDERER_VK_VERTEX_BUFFER_H
-
-#include "../../renderer.h"
 #include <vulkan/vulkan_core.h>
-
-void create_vertex_buffer(renderer *renderer);
-VkVertexInputBindingDescription get_binding_description();
+typedef struct vertex {
+    float pos[2];
+    float color[3];
+} vertex;
 void get_attribute_description(
     VkVertexInputAttributeDescription *attribute_descriptions);
-
-void create_index_buffer(renderer *renderer);
-
-#endif // VULKAN_RENDERER_VK_VERTEX_BUFFER_H
+VkVertexInputBindingDescription get_binding_description();
+#endif //VULKAN_RENDERER_VK_VERTEX_BUFFER_H

@@ -2,36 +2,54 @@
 // Created by saad on 9/25/26.
 //
 #include "./include/vk_sync.h"
+#include "../constant.h"
+#include "../log/loger.h"
+#include "vulkan/vulkan_core.h"
+#include <stdlib.h>
+
 
 VkResult create_sync_object(renderer *renderer) {
-  VkSemaphoreCreateInfo prsentation_semaphore_info = {0};
-  prsentation_semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-  VkSemaphoreCreateInfo render_finished_semaphore_info = {0};
-  render_finished_semaphore_info.sType =
-      VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+  VkResult res;
+  renderer->image_available_semaphore = malloc(sizeof(VkSemaphore) * 2);
 
-  VkResult res =
-      vkCreateSemaphore(renderer->my_device, &prsentation_semaphore_info, NULL,
-                        &renderer->image_available_semaphore);
-  if (res != VK_SUCCESS) {
-    return res;
-  }
-  res = vkCreateSemaphore(renderer->my_device, &render_finished_semaphore_info,
-                          NULL, &renderer->render_finisheds_semaphor);
+  renderer->render_finished_semaphore =
+      malloc(sizeof(VkSemaphore) * renderer->swapchain_image_count);
 
-  if (res != VK_SUCCESS) {
-    return res;
-  }
-  VkFenceCreateInfo draw_fence_info = {0};
-  draw_fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-  draw_fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+  renderer->draw_fence = malloc(sizeof(VkFence) * 2);
 
-  res = vkCreateFence(renderer->my_device, &draw_fence_info, NULL,
-                      &renderer->draw_fence);
+  //// NOTE: Image count here and image size is same ?
+  /// this structer will work for both semaphore ?
+  VkSemaphoreCreateInfo semaphore_create_info = {
+      .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+      .pNext = NULL,
+  };
+  for (int i = 0; i < renderer->swapchain_image_count; ++i) {
 
-  if (res != VK_SUCCESS) {
-    return res;
+    if (vkCreateSemaphore(renderer->my_device, &semaphore_create_info, NULL,
+                            &renderer->render_finished_semaphore[i]) != VK_SUCCESS) {
+      R_FATAL("error creating render_finished_semaphore ");
+    }
+
+
   }
 
-  return VK_SUCCESS;
+  VkFenceCreateInfo fence_create_info = {
+      .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+      .pNext = NULL,
+      .flags = VK_FENCE_CREATE_SIGNALED_BIT,
+  };
+  for (int i = 0; i < MAX_FRAME_IN_FLIGHT; ++i) {
+    res = vkCreateSemaphore(renderer->my_device, &semaphore_create_info, NULL,
+                            &renderer->image_available_semaphore[i]);
+    if (res != VK_SUCCESS) {
+      R_FATAL("error creating image available semaphore ");
+    }
+    res = vkCreateFence(renderer->my_device, &fence_create_info, NULL,
+                        &renderer->draw_fence[i]);
+    if (res != VK_SUCCESS) {
+      R_FATAL("error creating fences");
+    }
+  }
+
+  return res;
 }

@@ -14,7 +14,8 @@
 #include "vk_core/include/vk_surface.h"
 #include "vk_core/include/vk_swapchain.h"
 #include "vk_core/include/vk_sync.h"
-#include "vk_core/include/vk_vertex_buffer.h"
+#include "vk_core/include/vk_uniform_buffer.h"
+
 #include "window.h"
 
 void init_vulkan(renderer *renderer) {
@@ -25,17 +26,22 @@ void init_vulkan(renderer *renderer) {
   create_logical_device(renderer);
   create_swapchain(renderer);
   create_image_views(renderer);
+  create_command_pool(renderer);
+  create_command_buffer(renderer);
   create_vertex_buffer(renderer);
   create_index_buffer(renderer);
-  create_command_pool(renderer);
+  create_uniform_buffer(renderer);
+  create_descriptor_pool(renderer);
   create_descriptorset_layout(renderer);
-  create_command_buffer(renderer);
+  create_descriptor_set(renderer);
   create_graphics_pipeline(renderer);
   create_sync_object(renderer);
 }
 
 void run_app() {
   renderer renderer;
+  renderer.frame_index = 0;
+  renderer.image_index = 0;
   create_window(&renderer);
 
   init_vulkan(&renderer);

@@ -27,6 +27,7 @@ VkResult create_shader_module(renderer *renderer, size_t code_size,
 }
 
 void create_graphics_pipeline(renderer *renderer) {
+  VkResult res;
   const char *file_path = "/home/saad/code/c/vulkan-renderer/shader/slang.spv";
   uint32_t *code_buffer = NULL;
   size_t code_size;
@@ -66,7 +67,6 @@ void create_graphics_pipeline(renderer *renderer) {
       fragment_shader_stage,
   };
 
-  /// input vertex description binding
   VkVertexInputAttributeDescription input_attribute_description[2];
   get_attribute_description(input_attribute_description);
 
@@ -107,8 +107,11 @@ void create_graphics_pipeline(renderer *renderer) {
       .rasterizerDiscardEnable = VK_FALSE,
       .polygonMode = VK_POLYGON_MODE_FILL,
       .cullMode = VK_CULL_MODE_BACK_BIT,
+
+      /// define front face and debug this bug
+      .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
       .depthBiasEnable = VK_FALSE,
-      .frontFace = VK_FRONT_FACE_CLOCKWISE,
+
       .lineWidth = 1.0f,
 
   };
@@ -133,9 +136,8 @@ void create_graphics_pipeline(renderer *renderer) {
       .pushConstantRangeCount = 0,
   };
 
-  VkResult res =
-      vkCreatePipelineLayout(renderer->my_device, &pipeline_layoutinfo, NULL,
-                             &renderer->pipeline_layout);
+  res = vkCreatePipelineLayout(renderer->my_device, &pipeline_layoutinfo, NULL,
+                               &renderer->pipeline_layout);
 
   if (res != VK_SUCCESS) {
     R_FATAL("Failed to create pipeline layout");
@@ -154,7 +156,6 @@ void create_graphics_pipeline(renderer *renderer) {
       .pVertexInputState = &vertex_input_state_create_info,
       .pInputAssemblyState = &input_assembly_state_create_info,
       .pViewportState = &viewportstate_create_info,
-      /// we were missing this structer thats why segfault
       .pMultisampleState = &multisampling,
       .pRasterizationState = &rasterizer,
       .pColorBlendState = &color_blending,

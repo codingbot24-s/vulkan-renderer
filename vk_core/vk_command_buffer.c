@@ -3,8 +3,14 @@
 //
 
 #include "../log/loger.h"
-#include "include/vk_commandpool.h"
+#include "../renderer.h"
 #include "vulkan/vulkan_core.h"
+#include <stdlib.h>
+
+/*
+    NOTE: after changing the command buffer to * we have changed the command
+   buffer access
+*/
 
 void transition_image_layout(renderer *renderer, uint32_t image_index,
                              VkImageLayout old_layout, VkImageLayout new_layout,
@@ -36,18 +42,20 @@ void transition_image_layout(renderer *renderer, uint32_t image_index,
 
   VkDependencyInfo dependency_info = {
       .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-      .dependencyFlags = {},
       .imageMemoryBarrierCount = 1,
       .pImageMemoryBarriers = &barrier,
   };
 
-  vkCmdPipelineBarrier2(renderer->cmd_buff, &dependency_info);
+  vkCmdPipelineBarrier2(renderer->command_buffers[renderer->frame_index],
+                        &dependency_info);
 }
 
 VkResult record_cmd_buffer(renderer *renderer, uint32_t image_index) {
+
   VkCommandBufferBeginInfo cmd_begin_info = {0};
   cmd_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-  VkResult res = vkBeginCommandBuffer(renderer->cmd_buff, &cmd_begin_info);
+  VkResult res = vkBeginCommandBuffer(
+      renderer->command_buffers[renderer->frame_index], &cmd_begin_info);
 
   if (res != VK_SUCCESS) {
     return res;
@@ -86,34 +94,45 @@ VkResult record_cmd_buffer(renderer *renderer, uint32_t image_index) {
       .pColorAttachments = &attachment_info,
   };
 
-  vkCmdBeginRendering(renderer->cmd_buff, &rendering_info);
+  vkCmdBeginRendering(renderer->command_buffers[renderer->frame_index],
+                      &rendering_info);
 
-  vkCmdBindPipeline(renderer->cmd_buff, VK_PIPELINE_BIND_POINT_GRAPHICS,
+  vkCmdBindPipeline(renderer->command_buffers[renderer->frame_index],
+                    VK_PIPELINE_BIND_POINT_GRAPHICS,
                     renderer->graphics_pipeline);
 
   VkDeviceSize offsets[1] = {0};
-  vkCmdBindVertexBuffers(renderer->cmd_buff, 0, 1, &renderer->vertex_buffer,
-                         offsets);
+  vkCmdBindVertexBuffers(renderer->command_buffers[renderer->frame_index], 0, 1,
+                         &renderer->vertex_buffer, offsets);
 
-  vkCmdBindIndexBuffer(renderer->cmd_buff, renderer->index_buffer, 0,
-                       VK_INDEX_TYPE_UINT16);
+  vkCmdBindIndexBuffer(renderer->command_buffers[renderer->frame_index],
+                       renderer->index_buffer, 0, VK_INDEX_TYPE_UINT16);
+  /// NOTE: if we got flipped model then we need to change this view port
+  /// setting -height thats what tutorial say
   VkViewport viewport = {0};
-  viewport.height = renderer->swap_extent.height;
+  viewport.height = -(float)renderer->swap_extent.height;
   viewport.width = renderer->swap_extent.width;
   viewport.x = 0;
-  viewport.y = 0;
+  viewport.y = renderer->swap_extent.height;
   viewport.minDepth = 0;
   viewport.maxDepth = 1;
-  vkCmdSetViewport(renderer->cmd_buff, 0, 1, &viewport);
+  vkCmdSetViewport(renderer->command_buffers[renderer->frame_index], 0, 1,
+                   &viewport);
   VkRect2D scissor = {0};
   scissor.extent.width = renderer->swap_extent.width;
   scissor.extent.height = renderer->swap_extent.height;
-
-  vkCmdSetScissor(renderer->cmd_buff, 0, 1, &scissor);
+  vkCmdSetScissor(renderer->command_buffers[renderer->frame_index], 0, 1,
+                  &scissor);
+  //
+  vkCmdBindDescriptorSets(renderer->command_buffers[renderer->frame_index],
+                          VK_PIPELINE_BIND_POINT_GRAPHICS,
+                          renderer->pipeline_layout, 0, 1,
+                          &renderer->descriptor_sets[renderer->frame_index], 0, 0);
   /// NOTE: hardcoded 6 for rectangle change this
-  vkCmdDrawIndexed(renderer->cmd_buff, 6, 1, 0, 0, 0);
+  vkCmdDrawIndexed(renderer->command_buffers[renderer->frame_index], 6, 1, 0, 0,
+                   0);
 
-  vkCmdEndRendering(renderer->cmd_buff);
+  vkCmdEndRendering(renderer->command_buffers[renderer->frame_index]);
 
   transition_image_layout(
       renderer, image_index, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -121,7 +140,7 @@ VkResult record_cmd_buffer(renderer *renderer, uint32_t image_index) {
       VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
       VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT);
 
-  res = vkEndCommandBuffer(renderer->cmd_buff);
+  res = vkEndCommandBuffer(renderer->command_buffers[renderer->frame_index]);
 
   if (res != VK_SUCCESS) {
     return res;
@@ -132,15 +151,19 @@ VkResult record_cmd_buffer(renderer *renderer, uint32_t image_index) {
 
 void create_command_buffer(renderer *renderer) {
 
-  VkCommandBufferAllocateInfo command_buffer_allocate_info = {
+  const VkCommandBufferAllocateInfo command_buffer_allocate_info = {
       .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
       .pNext = NULL,
       .commandPool = renderer->command_pool,
       .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-      .commandBufferCount = 1,
+      .commandBufferCount = 2,
   };
-  const VkResult res = vkAllocateCommandBuffers(
-      renderer->my_device, &command_buffer_allocate_info, &renderer->cmd_buff);
+
+  renderer->command_buffers = malloc(sizeof(VkCommandBuffer) * 2);
+  const VkResult res = vkAllocateCommandBuffers(renderer->my_device,
+                                                &command_buffer_allocate_info,
+                                                renderer->command_buffers);
+
   if (res != VK_SUCCESS) {
     R_FATAL("cant allocate command buffer");
   }
