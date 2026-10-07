@@ -3,6 +3,7 @@
 //
 
 #include "../renderer.h"
+#include "./include/vk_image.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -231,4 +232,24 @@ void create_swapchain(renderer *renderer) {
   }
 
   setup_images(renderer);
+}
+
+void create_swapchain_image_view(renderer *renderer) {
+
+  if (!renderer->swapchain_images) {
+    return;
+  }
+
+  renderer->swapchain_image_views =
+      malloc(renderer->swapchain_image_count * sizeof(VkImageView));
+  if (!renderer->swapchain_image_views) {
+    return;
+  }
+
+  for (int i = 0; i < renderer->swapchain_image_count; ++i) {
+    create_image_views(renderer, renderer->swapchain_images[i],
+                       renderer->surface_format.format,
+                       VK_IMAGE_ASPECT_COLOR_BIT,
+                       &renderer->swapchain_image_views[i]);
+  }
 }

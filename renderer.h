@@ -39,12 +39,22 @@ typedef struct renderer {
   VkDescriptorPool descriptor_pool;
   VkDescriptorSet *descriptor_sets;
   /// sync objects
-
   uint32_t frame_index;
   uint32_t image_index;
   VkSemaphore *image_available_semaphore;
   VkSemaphore *render_finished_semaphore;
   VkFence *draw_fence;
+
+  VkImage depth_image;
+  VkDeviceMemory depth_image_memory;
+  VkImageView depth_image_view;
+  VkFormat depth_format;
+
+  // staging buffer for texture
+  VkBuffer staging_buffer;
+  VkDeviceMemory stagin_buffer_memory;
+  VkImage texture_image;
+  VkDeviceMemory texture_image_memory;
 } renderer;
 
 #endif // VULKAN_RENDERER_RENDERER_H

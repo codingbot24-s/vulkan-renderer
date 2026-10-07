@@ -9,14 +9,15 @@
 #include "vk_core/include/vk_device.h"
 #include "vk_core/include/vk_discriptor.h"
 #include "vk_core/include/vk_graphics.h"
-#include "vk_core/include/vk_image.h"
 #include "vk_core/include/vk_instance.h"
 #include "vk_core/include/vk_surface.h"
 #include "vk_core/include/vk_swapchain.h"
 #include "vk_core/include/vk_sync.h"
+#include "vk_core/include/vk_texture.h"
 #include "vk_core/include/vk_uniform_buffer.h"
-
+#include "vk_core/include/vk_zbuffer.h"
 #include "window.h"
+#include <stdio.h>
 
 void init_vulkan(renderer *renderer) {
   renderer->my_vk_instance = create_instance();
@@ -25,9 +26,11 @@ void init_vulkan(renderer *renderer) {
   pick_physical_device(renderer);
   create_logical_device(renderer);
   create_swapchain(renderer);
-  create_image_views(renderer);
+  create_swapchain_image_view(renderer);
   create_command_pool(renderer);
   create_command_buffer(renderer);
+  create_depth_resource(renderer);
+  create_texture_image(renderer);
   create_vertex_buffer(renderer);
   create_index_buffer(renderer);
   create_uniform_buffer(renderer);

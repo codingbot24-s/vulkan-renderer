@@ -57,6 +57,10 @@ add_executable(vulkan-renderer
         vk_core/vk_index_buffer.c
         vk_core/include/vk_uniform_buffer.h
         vk_core/vk_uniform_buffer.c
+        vk_core/include/vk_zbuffer.h
+        vk_core/vk_zbuffer.c
+        vk_core/include/vk_texture.h
+        vk_core/vk_texture.c
 )
 
 set(VULKAN_SDK "/opt/vulkan/1.4.357.1/x86_64")

@@ -4,6 +4,7 @@
 
 #include "../log/loger.h"
 #include "../renderer.h"
+#include "./include/vk_image.h"
 #include "vulkan/vulkan_core.h"
 #include <stdlib.h>
 
@@ -11,44 +12,6 @@
     NOTE: after changing the command buffer to * we have changed the command
    buffer access
 */
-
-void transition_image_layout(renderer *renderer, uint32_t image_index,
-                             VkImageLayout old_layout, VkImageLayout new_layout,
-                             VkAccessFlags2 src_access_mask,
-                             VkAccessFlags2 dst_access_mask,
-                             VkPipelineStageFlags2 src_stage_mask,
-                             VkPipelineStageFlags2 dst_stage_mask) {
-  VkImageMemoryBarrier2 barrier = {
-      .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-      .srcStageMask = src_stage_mask,
-      .srcAccessMask = src_access_mask,
-      .dstStageMask = dst_stage_mask,
-      .dstAccessMask = dst_access_mask,
-      .oldLayout = old_layout,
-      .newLayout = new_layout,
-      .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-      .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-      .image = renderer->swapchain_images[image_index],
-      .subresourceRange =
-          {
-              .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-              .baseMipLevel = 0,
-              .levelCount = 1,
-              .baseArrayLayer = 0,
-              .layerCount = 1,
-          }
-
-  };
-
-  VkDependencyInfo dependency_info = {
-      .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-      .imageMemoryBarrierCount = 1,
-      .pImageMemoryBarriers = &barrier,
-  };
-
-  vkCmdPipelineBarrier2(renderer->command_buffers[renderer->frame_index],
-                        &dependency_info);
-}
 
 VkResult record_cmd_buffer(renderer *renderer, uint32_t image_index) {
 
@@ -60,17 +23,31 @@ VkResult record_cmd_buffer(renderer *renderer, uint32_t image_index) {
   if (res != VK_SUCCESS) {
     return res;
   }
-
-  transition_image_layout(renderer, image_index, VK_IMAGE_LAYOUT_UNDEFINED,
+  VkImage swapchain_image = renderer->swapchain_images[image_index];
+  transition_image_layout(renderer, swapchain_image, VK_IMAGE_LAYOUT_UNDEFINED,
                           VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 0,
                           VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                           VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                          VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT);
+                          VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                          VK_IMAGE_ASPECT_COLOR_BIT);
   VkClearColorValue clear_color_value;
   clear_color_value.float32[0] = 0.0f;
   clear_color_value.float32[1] = 0.0f;
   clear_color_value.float32[2] = 0.0f;
   clear_color_value.float32[3] = 1.0f;
+
+  transition_image_layout(renderer, renderer->depth_image,
+                          VK_IMAGE_LAYOUT_UNDEFINED,
+                          VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+                          VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                          VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                          VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                              VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+                          VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                              VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+                          VK_IMAGE_ASPECT_DEPTH_BIT);
+
+  VkClearDepthStencilValue clear_depth = {.depth = 1.0f};
 
   VkRenderingAttachmentInfo attachment_info = {
       .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
@@ -79,6 +56,15 @@ VkResult record_cmd_buffer(renderer *renderer, uint32_t image_index) {
       .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
       .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
       .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+  };
+
+  VkRenderingAttachmentInfo depth_attachment_info = {
+      .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+      .clearValue = clear_depth.depth,
+      .imageView = renderer->depth_image_view,
+      .imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+      .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+      .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
   };
 
   VkRenderingInfo rendering_info = {
@@ -92,7 +78,7 @@ VkResult record_cmd_buffer(renderer *renderer, uint32_t image_index) {
       .layerCount = 1,
       .colorAttachmentCount = 1,
       .pColorAttachments = &attachment_info,
-  };
+      .pDepthAttachment = &depth_attachment_info};
 
   vkCmdBeginRendering(renderer->command_buffers[renderer->frame_index],
                       &rendering_info);
@@ -107,8 +93,7 @@ VkResult record_cmd_buffer(renderer *renderer, uint32_t image_index) {
 
   vkCmdBindIndexBuffer(renderer->command_buffers[renderer->frame_index],
                        renderer->index_buffer, 0, VK_INDEX_TYPE_UINT16);
-  /// NOTE: if we got flipped model then we need to change this view port
-  /// setting -height thats what tutorial say
+
   VkViewport viewport = {0};
   viewport.height = -(float)renderer->swap_extent.height;
   viewport.width = renderer->swap_extent.width;
@@ -123,22 +108,24 @@ VkResult record_cmd_buffer(renderer *renderer, uint32_t image_index) {
   scissor.extent.height = renderer->swap_extent.height;
   vkCmdSetScissor(renderer->command_buffers[renderer->frame_index], 0, 1,
                   &scissor);
-  //
-  vkCmdBindDescriptorSets(renderer->command_buffers[renderer->frame_index],
-                          VK_PIPELINE_BIND_POINT_GRAPHICS,
-                          renderer->pipeline_layout, 0, 1,
-                          &renderer->descriptor_sets[renderer->frame_index], 0, 0);
-  /// NOTE: hardcoded 6 for rectangle change this
-  vkCmdDrawIndexed(renderer->command_buffers[renderer->frame_index], 6, 1, 0, 0,
-                   0);
+  // so we are seeing this rectangle because this indices we need to make it
+  // cube indices
+  vkCmdBindDescriptorSets(
+      renderer->command_buffers[renderer->frame_index],
+      VK_PIPELINE_BIND_POINT_GRAPHICS, renderer->pipeline_layout, 0, 1,
+      &renderer->descriptor_sets[renderer->frame_index], 0, 0);
+  /// NOTE: hardcoded 6 for rectangle change this yes we need to change this
+  /// because our indices is changed 6 is wrong for cube we need the 36
+  vkCmdDrawIndexed(renderer->command_buffers[renderer->frame_index], 12, 1, 0,
+                   0, 0);
 
   vkCmdEndRendering(renderer->command_buffers[renderer->frame_index]);
 
   transition_image_layout(
-      renderer, image_index, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+      renderer, swapchain_image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
       VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, 0,
-      VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-      VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT);
+      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+      VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
 
   res = vkEndCommandBuffer(renderer->command_buffers[renderer->frame_index]);
 

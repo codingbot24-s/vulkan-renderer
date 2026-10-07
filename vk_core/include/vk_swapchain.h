@@ -6,5 +6,6 @@
 #define VULKAN_RENDERER_VK_SWAPCHAIN_H
 #include "../../renderer.h"
 void create_swapchain(renderer *renderer);
+void create_swapchain_image_view(renderer *renderer);
 
 #endif // VULKAN_RENDERER_VK_SWAPCHAIN_H

@@ -30,7 +30,6 @@ void create_window(renderer *renderer) {
   }
 }
 VkResult draw_frame(renderer *renderer) {
-
   VkResult res = vkWaitForFences(renderer->my_device, 1,
                                  &renderer->draw_fence[renderer->frame_index],
                                  VK_TRUE, UINT64_MAX);
@@ -45,12 +44,20 @@ VkResult draw_frame(renderer *renderer) {
   }
   /// this call need the fence in unsignaled state
   // uint32_t image_index = 0;
-  res = vkAcquireNextImageKHR(renderer->my_device,renderer->my_swapchain,UINT64_MAX,renderer->image_available_semaphore[renderer->frame_index],NULL,&renderer->image_index);
-  if (res != VK_SUCCESS) {
-    R_FATAL("cant get the image");
+  res = vkAcquireNextImageKHR(
+      renderer->my_device, renderer->my_swapchain, UINT64_MAX,
+      renderer->image_available_semaphore[renderer->frame_index], NULL,
+      &renderer->image_index);
+  /// what if we do this for testing
+  if (res != VK_SUCCESS)  {
+    // R_FATAL("cant get the image");
+    printf("res != vk success res = %d  image index is %d", res, renderer->image_index);
   }
 
   update_uniform_buffer(renderer->frame_index, renderer);
+  /// NOTE: i am still thinking about these do we need to reset the command
+  /// buffer we
+  ///  will try but for now our renderer is working here we
   // res =
   //     vkResetCommandBuffer(renderer->command_buffers[renderer->frame_index],
   //     0);
@@ -61,7 +68,7 @@ VkResult draw_frame(renderer *renderer) {
 
   res = record_cmd_buffer(renderer, renderer->image_index);
   if (res != VK_SUCCESS) {
-    R_FATAL("cant get the image");
+    R_FATAL("error recording command buffer");
   }
 
   VkPipelineStageFlags wait_stage_flag =
@@ -79,11 +86,10 @@ VkResult draw_frame(renderer *renderer) {
       .pSignalSemaphores =
           &renderer->render_finished_semaphore[renderer->image_index],
   };
-
-  /// changed so
-  res = vkQueueSubmit(renderer->my_queue, 1, &submit_info, renderer->draw_fence[renderer->frame_index]);
+  res = vkQueueSubmit(renderer->my_queue, 1, &submit_info,
+                      renderer->draw_fence[renderer->frame_index]);
   if (res != VK_SUCCESS) {
-    R_FATAL("cant get the image");
+    R_FATAL("error submitting to queue");
   }
   VkPresentInfoKHR present_info = {
       .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
@@ -96,13 +102,13 @@ VkResult draw_frame(renderer *renderer) {
       .pImageIndices = &renderer->image_index,
   };
   res = vkQueuePresentKHR(renderer->my_queue, &present_info);
-  if (res != VK_SUCCESS) {
-    R_FATAL("presentation error ");
+  
+  if (res != VK_SUCCESS && res != VK_SUBOPTIMAL_KHR) {
+    R_FATAL("presentation error");
   }
-
   renderer->frame_index = (renderer->frame_index + 1) % MAX_FRAME_IN_FLIGHT;
-  //
-  // return VK_SUCCESS;
+
+  return VK_SUCCESS;
 }
 
 void main_loop(GLFWwindow *window, renderer *renderer) {

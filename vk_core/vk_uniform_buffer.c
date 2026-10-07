@@ -76,18 +76,19 @@ void update_uniform_buffer(uint32_t current_image, renderer *renderer) {
   float_t elapsed_time;
   gettimeofday(&time1, NULL);
   gettimeofday(&time2, NULL);
-
+  // we also need to fix this time right now it has no effect
   elapsed_time = (time2.tv_sec - time1.tv_sec) * 1000.0;
   elapsed_time += (time2.tv_usec - time1.tv_usec) / 1000.0;
 
   uniform_buffer_obj ubo = {0};
 
+// so now our zubuffer and cube rendering is working
   glm_mat4_identity(ubo.model);
   vec3 axis = {0.0f, 0.0f, 1.0f};
-  glm_rotate(ubo.model, 100 * glm_rad(90.f), axis);
-  vec3 eye = {0.0f, 0.0f, 3.0f};
+  glm_rotate(ubo.model, glm_rad(90.f), axis);
+  vec3 eye = {2.0f, 2.0f, 2.0f};
   vec3 target = {0.0f, 0.0f, 0.0f};
-  vec3 up = {0.0f, 1.0f, 0.0f};
+  vec3 up = {0.0f, 0.0f, 1.0f};
 
   glm_lookat(eye, target, up, ubo.view);
   float aspect_ratio =

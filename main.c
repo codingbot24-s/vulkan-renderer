@@ -4,17 +4,14 @@
 
 /*
 
-  1. Create a uniform buffer that stores per-frame shader data and make it
-  accessible from the graphics pipeline.
-  Create one uniform buffer for the current frame.
-  Upload a simple value such as a transformation matrix.
-  Verify the shader can read the uniform data.
-
-  2.Create the Vulkan descriptor set layout, descriptor pool, and descriptor set
-  required to bind your uniform buffer to the shaders.
-  Bind the uniform buffer through a descriptor set.
-  Bind the descriptor set during rendering.
-  Verify the triangle still renders correctly.
+  3. Add GPU texture support to your renderer now we need to implement these
+  4. Add 3D model loading to the renderer and render a real model instead of the
+  hardcoded triangle.
+  Model format: OBJ
+  Use a simple model such as a cube
+  Load its vertex positions and indices.
+  Upload the model data to GPU buffers.
+  Render the model through your existing graphics pipeline.
 */
 
 #include "init.h"

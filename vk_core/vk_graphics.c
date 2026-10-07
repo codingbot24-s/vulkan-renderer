@@ -6,6 +6,7 @@
 #include "../input.h"
 #include "../log/loger.h"
 #include "./include/vk_vertex_buffer.h"
+#include "vulkan/vulkan_core.h"
 
 VkResult create_shader_module(renderer *renderer, size_t code_size,
                               const uint32_t *code,
@@ -44,6 +45,7 @@ void create_graphics_pipeline(renderer *renderer) {
       .pNext = NULL,
       .colorAttachmentCount = 1,
       .pColorAttachmentFormats = &renderer->surface_format.format,
+      .depthAttachmentFormat = renderer->depth_format,
   };
 
   VkPipelineShaderStageCreateInfo vertex_shader_stage = {
@@ -107,8 +109,6 @@ void create_graphics_pipeline(renderer *renderer) {
       .rasterizerDiscardEnable = VK_FALSE,
       .polygonMode = VK_POLYGON_MODE_FILL,
       .cullMode = VK_CULL_MODE_BACK_BIT,
-
-      /// define front face and debug this bug
       .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
       .depthBiasEnable = VK_FALSE,
 
@@ -147,7 +147,15 @@ void create_graphics_pipeline(renderer *renderer) {
       .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
       .sampleShadingEnable = VK_FALSE,
   };
-
+  VkPipelineDepthStencilStateCreateInfo depth_stencil_state = {
+      .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+      .pNext = NULL,
+      .depthTestEnable = VK_TRUE,
+      .depthWriteEnable = VK_TRUE,
+      .depthCompareOp = VK_COMPARE_OP_LESS,
+      .depthBoundsTestEnable = VK_FALSE,
+      .stencilTestEnable = VK_FALSE,
+  };
   VkGraphicsPipelineCreateInfo graphics_pipeline_create_info = {
       .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
       .pNext = &pipeline_rendering_create_info,
@@ -156,6 +164,7 @@ void create_graphics_pipeline(renderer *renderer) {
       .pVertexInputState = &vertex_input_state_create_info,
       .pInputAssemblyState = &input_assembly_state_create_info,
       .pViewportState = &viewportstate_create_info,
+      .pDepthStencilState = &depth_stencil_state,
       .pMultisampleState = &multisampling,
       .pRasterizationState = &rasterizer,
       .pColorBlendState = &color_blending,
