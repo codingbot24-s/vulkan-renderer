@@ -5,10 +5,12 @@
 #include "include/vk_buffer.h"
 #include "include/vk_image.h"
 #include "vulkan/vulkan_core.h"
+#include <stdint.h>
 #include <string.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include "../libs/stb_image.h"
 #include "../log/loger.h"
+#include "./include/vk_command_buffers.h"
 
 void create_texture_image(renderer *renderer) {
   int texture_width, texture_height, texture_channels;
@@ -21,7 +23,7 @@ void create_texture_image(renderer *renderer) {
     R_FATAL("error loading texture \n");
   }
 
-  const VkDeviceSize image_size = texture_width * texture_width * 4;
+  const VkDeviceSize image_size = texture_width * texture_height * 4;
 
   VkResult res =
       create_buffer(renderer, image_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -74,8 +76,52 @@ void create_texture_image(renderer *renderer) {
                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &renderer->texture_image,
                &renderer->texture_image_memory);
 
-  /// ok so we will continue from here in the next stream
-#ifndef NDEBUG
-  R_INFO("texture created");
-#endif
+  begin_one_time_command_buffer(renderer);
+  transition_image_layout(renderer, renderer->texture_image,
+                          renderer->texture_image_transformation_command_buffer,
+                          VK_IMAGE_LAYOUT_UNDEFINED,
+                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 0, 0, 0, 0,
+                          VK_IMAGE_ASPECT_COLOR_BIT);
+
+  copy_buffer_to_image(renderer->texture_image_transformation_command_buffer,
+                       &renderer->staging_buffer, &renderer->texture_image,
+                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                       (uint32_t)texture_width, (uint32_t)texture_height);
+  transition_image_layout(renderer, renderer->texture_image,
+                          renderer->texture_image_transformation_command_buffer,
+                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 0, 0, 0, 0,
+                          VK_IMAGE_ASPECT_COLOR_BIT);
+  end_one_time_command_buffer(renderer);
+}
+
+void create_texture_image_view(renderer *renderer) {
+
+  create_image_views(renderer, renderer->texture_image, VK_FORMAT_R8G8B8A8_SRGB,
+                     VK_IMAGE_ASPECT_COLOR_BIT, &renderer->texture_image_view);
+}
+void create_texture_sampler(renderer *renderer) {
+
+  VkPhysicalDeviceProperties properties;
+  vkGetPhysicalDeviceProperties(renderer->my_physical_device, &properties);
+  VkSamplerCreateInfo sampler_info = {
+      .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+      .magFilter = VK_FILTER_LINEAR,
+      .minFilter = VK_FILTER_LINEAR,
+      .mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR,
+      .addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+      .addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+      .addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+      .anisotropyEnable = VK_TRUE,
+      .maxAnisotropy = properties.limits.maxSamplerAnisotropy,
+      .compareEnable = VK_TRUE,
+      .compareOp = VK_COMPARE_OP_ALWAYS,
+  };
+
+  VkResult res = vkCreateSampler(renderer->my_device, &sampler_info, NULL,
+                                 &renderer->sampler);
+
+  if (res != VK_SUCCESS) {
+    R_FATAL("error creating sampler");
+  }
 }

@@ -2,10 +2,10 @@
 /// TODO: 1.we need dynamic array and strings and
 /// TODO: staing buffer
 
+/// TODO:FIX image rotated
 /*
 
-  3. Add GPU texture support to your renderer now we need to implement these
-  4. Add 3D model loading to the renderer and render a real model instead of the
+  1. Add 3D model loading to the renderer and render a real model instead of the
   hardcoded triangle.
   Model format: OBJ
   Use a simple model such as a cube

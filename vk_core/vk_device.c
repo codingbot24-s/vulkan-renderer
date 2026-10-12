@@ -164,6 +164,7 @@ bool check_physical_device_features(VkPhysicalDevice device) {
   VkPhysicalDeviceFeatures2 vk_phsical_device_features2;
   vk_phsical_device_features2.sType =
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+  vk_phsical_device_features2.features.samplerAnisotropy = VK_TRUE,
   vk_phsical_device_features2.pNext = &vk11_physical_device_features;
 
   vkGetPhysicalDeviceFeatures2(device, &vk_phsical_device_features2);
@@ -176,6 +177,10 @@ bool check_physical_device_features(VkPhysicalDevice device) {
   }
 
   if (!vk_physical_device_extended_dstate_features.extendedDynamicState) {
+    return false;
+  }
+
+  if (!vk_phsical_device_features2.features.samplerAnisotropy) {
     return false;
   }
 
@@ -308,6 +313,7 @@ void create_logical_device(renderer *renderer) {
   VkPhysicalDeviceFeatures2 physical_device_features_2 = {0};
   physical_device_features_2.sType =
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+  physical_device_features_2.features.samplerAnisotropy = VK_TRUE;
   physical_device_features_2.pNext = &vk11_physical_device_features;
 
   VkDeviceCreateInfo device_create_info = {

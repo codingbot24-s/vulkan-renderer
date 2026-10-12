@@ -48,10 +48,11 @@ VkResult draw_frame(renderer *renderer) {
       renderer->my_device, renderer->my_swapchain, UINT64_MAX,
       renderer->image_available_semaphore[renderer->frame_index], NULL,
       &renderer->image_index);
-  /// what if we do this for testing
-  if (res != VK_SUCCESS)  {
-    // R_FATAL("cant get the image");
-    printf("res != vk success res = %d  image index is %d", res, renderer->image_index);
+  /// NOTE: this returns the result with optimal flag so this check is required for now
+  /// TODO: fix this and remove the suboptimal flag
+
+  if (res != VK_SUCCESS && res != VK_SUBOPTIMAL_KHR) {
+    R_FATAL("cant get the image");
   }
 
   update_uniform_buffer(renderer->frame_index, renderer);
@@ -102,7 +103,7 @@ VkResult draw_frame(renderer *renderer) {
       .pImageIndices = &renderer->image_index,
   };
   res = vkQueuePresentKHR(renderer->my_queue, &present_info);
-  
+
   if (res != VK_SUCCESS && res != VK_SUBOPTIMAL_KHR) {
     R_FATAL("presentation error");
   }

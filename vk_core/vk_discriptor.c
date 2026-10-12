@@ -11,17 +11,27 @@
 
 void create_descriptorset_layout(renderer *renderer) {
 
-  const VkDescriptorSetLayoutBinding ubo_layout_binding = {
-      .binding = 0,
-      .descriptorCount = 1,
-      .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-      .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+  const VkDescriptorSetLayoutBinding bindings[] = {
+      (VkDescriptorSetLayoutBinding){
+          .binding = 0,
+          .descriptorCount = 1,
+          .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+          .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+      },
+
+      (VkDescriptorSetLayoutBinding){
+          .binding = 1,
+          .descriptorCount = 1,
+          .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+          .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+      },
   };
+
   const VkDescriptorSetLayoutCreateInfo descriptor_layout_info = {
       .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
       .pNext = NULL,
-      .bindingCount = 1,
-      .pBindings = &ubo_layout_binding,
+      .bindingCount = 2,
+      .pBindings = bindings,
 
   };
   const VkResult res =
@@ -37,17 +47,24 @@ void create_descriptorset_layout(renderer *renderer) {
 }
 
 void create_descriptor_pool(renderer *renderer) {
-  const VkDescriptorPoolSize pool_size_and_info = {
-      .descriptorCount = MAX_FRAME_IN_FLIGHT,
-      .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER};
+  const VkDescriptorPoolSize poolsize_and_info[] = {
+      (VkDescriptorPoolSize){
+          .descriptorCount = MAX_FRAME_IN_FLIGHT,
+          .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+      },
+      (VkDescriptorPoolSize){
+          .descriptorCount = MAX_FRAME_IN_FLIGHT,
+          .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+      },
+  };
 
   const VkDescriptorPoolCreateInfo descriptor_pool_create_info = {
       .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
       .pNext = NULL,
       .flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
       .maxSets = MAX_FRAME_IN_FLIGHT,
-      .poolSizeCount = 1,
-      .pPoolSizes = &pool_size_and_info,
+      .poolSizeCount = 2,
+      .pPoolSizes = poolsize_and_info,
   };
   VkResult res =
       vkCreateDescriptorPool(renderer->my_device, &descriptor_pool_create_info,
@@ -76,22 +93,44 @@ void create_descriptor_set(renderer *renderer) {
                            renderer->descriptor_sets);
 
   /// NOTE: 2 is max frame in flight
-  for (uint32_t i = 0; i < 2; i++) {
+  for (uint32_t i = 0; i < MAX_FRAME_IN_FLIGHT; i++) {
     const VkDescriptorBufferInfo buffer_info = {
         .buffer = renderer->uniform_buffers[i],
         .offset = 0,
         .range = VK_WHOLE_SIZE};
-    const VkWriteDescriptorSet write_descriptor_set = {
-        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-        .pNext = NULL,
-        .dstSet = renderer->descriptor_sets[i],
-        .dstBinding = 0,
-        .dstArrayElement = 0,
-        .descriptorCount = 1,
-        .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-        .pBufferInfo = &buffer_info,
+
+    const VkDescriptorImageInfo image_info = {
+        .sampler = renderer->sampler,
+        .imageView = renderer->texture_image_view,
+        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+
+    const VkWriteDescriptorSet write_descriptor_sets[] = {
+        (VkWriteDescriptorSet){
+
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .pNext = NULL,
+            .dstSet = renderer->descriptor_sets[i],
+            .dstBinding = 0,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .pBufferInfo = &buffer_info,
+        },
+
+        (VkWriteDescriptorSet){
+
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .pNext = NULL,
+            .dstSet = renderer->descriptor_sets[i],
+            .dstBinding = 1,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .pImageInfo = &image_info,
+        },
     };
-    vkUpdateDescriptorSets(renderer->my_device, 1, &write_descriptor_set, 0,
+
+    vkUpdateDescriptorSets(renderer->my_device, 2, write_descriptor_sets, 0,
                            NULL);
   }
 

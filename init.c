@@ -3,21 +3,23 @@
 //
 
 #include "init.h"
+#include "./load_model.h"
 #include "renderer.h"
 #include "vk_core/include/vk_command_buffers.h"
 #include "vk_core/include/vk_commandpool.h"
 #include "vk_core/include/vk_device.h"
 #include "vk_core/include/vk_discriptor.h"
 #include "vk_core/include/vk_graphics.h"
+#include "vk_core/include/vk_index_buffer.h"
 #include "vk_core/include/vk_instance.h"
 #include "vk_core/include/vk_surface.h"
 #include "vk_core/include/vk_swapchain.h"
 #include "vk_core/include/vk_sync.h"
 #include "vk_core/include/vk_texture.h"
 #include "vk_core/include/vk_uniform_buffer.h"
+#include "vk_core/include/vk_vertex_buffer.h"
 #include "vk_core/include/vk_zbuffer.h"
 #include "window.h"
-#include <stdio.h>
 
 void init_vulkan(renderer *renderer) {
   renderer->my_vk_instance = create_instance();
@@ -31,6 +33,10 @@ void init_vulkan(renderer *renderer) {
   create_command_buffer(renderer);
   create_depth_resource(renderer);
   create_texture_image(renderer);
+  create_texture_image_view(renderer);
+  create_texture_sampler(renderer);
+  /// TODO: remove this function from here it is not vulkan function
+  load_model("/home/saad/code/c/vulkan-renderer/models/viking_room.obj");
   create_vertex_buffer(renderer);
   create_index_buffer(renderer);
   create_uniform_buffer(renderer);

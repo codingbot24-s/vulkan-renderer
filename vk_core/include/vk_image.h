@@ -17,11 +17,11 @@ void create_image_views(renderer *renderer, VkImage image, VkFormat format,
                         VkImageView *p_to_image_view);
 
 void transition_image_layout(renderer *renderer, VkImage image,
+                             VkCommandBuffer *cmd_buffer,
                              VkImageLayout old_layout, VkImageLayout new_layout,
                              VkAccessFlags2 src_access_mask,
                              VkAccessFlags2 dst_access_mask,
                              VkPipelineStageFlags2 src_stage_mask,
                              VkPipelineStageFlags2 dst_stage_mask,
                              VkImageAspectFlags aspect_flags);
-
 #endif // VULKAN_RENDERER_VK_IMAGE_H

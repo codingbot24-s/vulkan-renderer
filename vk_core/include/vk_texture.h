@@ -5,6 +5,9 @@
 #ifndef VULKAN_RENDERER_VK_TEXTURE_H
 #define VULKAN_RENDERER_VK_TEXTURE_H
 
-void create_texture_image();
+#include "../../renderer.h"
 
+void create_texture_image(renderer *renderer);
+void create_texture_image_view(renderer *renderer);
+void create_texture_sampler(renderer *renderer);
 #endif // VULKAN_RENDERER_VK_TEXTURE_H

@@ -24,4 +24,7 @@ uint32_t find_memory_type(uint32_t memory_type,
 VkResult map_memory(renderer *renderer, VkDeviceMemory device_memory,
                     VkDeviceSize offset, VkDeviceSize buffer_size, void **data);
 
+void copy_buffer_to_image(VkCommandBuffer *cmd_buffer, VkBuffer *src_buffer,
+                          VkImage *dst_image, VkImageLayout dst_image_layout,
+                          uint32_t width, uint32_t height);
 #endif // VULKAN_RENDERER_VK_VERTEX_BUFFER_H

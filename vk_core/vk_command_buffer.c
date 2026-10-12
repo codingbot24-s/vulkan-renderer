@@ -24,7 +24,9 @@ VkResult record_cmd_buffer(renderer *renderer, uint32_t image_index) {
     return res;
   }
   VkImage swapchain_image = renderer->swapchain_images[image_index];
-  transition_image_layout(renderer, swapchain_image, VK_IMAGE_LAYOUT_UNDEFINED,
+  transition_image_layout(renderer, swapchain_image,
+                          &renderer->command_buffers[renderer->frame_index],
+                          VK_IMAGE_LAYOUT_UNDEFINED,
                           VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 0,
                           VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                           VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -37,6 +39,7 @@ VkResult record_cmd_buffer(renderer *renderer, uint32_t image_index) {
   clear_color_value.float32[3] = 1.0f;
 
   transition_image_layout(renderer, renderer->depth_image,
+                          &renderer->command_buffers[renderer->frame_index],
                           VK_IMAGE_LAYOUT_UNDEFINED,
                           VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
                           VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
@@ -96,7 +99,7 @@ VkResult record_cmd_buffer(renderer *renderer, uint32_t image_index) {
 
   VkViewport viewport = {0};
   viewport.height = -(float)renderer->swap_extent.height;
-  viewport.width = renderer->swap_extent.width;
+  viewport.width = (float)renderer->swap_extent.width;
   viewport.x = 0;
   viewport.y = renderer->swap_extent.height;
   viewport.minDepth = 0;
@@ -116,16 +119,18 @@ VkResult record_cmd_buffer(renderer *renderer, uint32_t image_index) {
       &renderer->descriptor_sets[renderer->frame_index], 0, 0);
   /// NOTE: hardcoded 6 for rectangle change this yes we need to change this
   /// because our indices is changed 6 is wrong for cube we need the 36
-  vkCmdDrawIndexed(renderer->command_buffers[renderer->frame_index], 12, 1, 0,
-                   0, 0);
+  vkCmdDrawIndexed(renderer->command_buffers[renderer->frame_index], 6, 1, 0, 0,
+                   0);
 
   vkCmdEndRendering(renderer->command_buffers[renderer->frame_index]);
 
   transition_image_layout(
-      renderer, swapchain_image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-      VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, 0,
+      renderer, swapchain_image,
+      &renderer->command_buffers[renderer->frame_index],
+      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+      VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, 0,
       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-      VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
+      VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
 
   res = vkEndCommandBuffer(renderer->command_buffers[renderer->frame_index]);
 
@@ -136,6 +141,8 @@ VkResult record_cmd_buffer(renderer *renderer, uint32_t image_index) {
   return VK_SUCCESS;
 }
 
+//// NOTE: we can use this for creating all the command buffers and remove some
+/// repeated code
 void create_command_buffer(renderer *renderer) {
 
   const VkCommandBufferAllocateInfo command_buffer_allocate_info = {
@@ -153,5 +160,74 @@ void create_command_buffer(renderer *renderer) {
 
   if (res != VK_SUCCESS) {
     R_FATAL("cant allocate command buffer");
+  }
+}
+
+/// allocate and begin one time command buffer
+/// NOTE: this function shoudnt access the renderer it should only create and
+/// return the command buffer add this
+void begin_one_time_command_buffer(renderer *renderer) {
+
+  const VkCommandBufferAllocateInfo command_buffer_allocate_info = {
+      .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+      .pNext = NULL,
+      .commandPool = renderer->command_pool,
+      .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+      .commandBufferCount = 1,
+  };
+
+  renderer->texture_image_transformation_command_buffer =
+      malloc(sizeof(VkCommandBuffer) * 1);
+
+  VkResult res = vkAllocateCommandBuffers(
+      renderer->my_device, &command_buffer_allocate_info,
+      renderer->texture_image_transformation_command_buffer);
+
+  if (res != VK_SUCCESS) {
+    R_FATAL("cant allocate command buffer");
+  }
+
+  VkCommandBufferBeginInfo command_buffer_begin_info = {
+      .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+      .pNext = NULL,
+      .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+  };
+  res = vkBeginCommandBuffer(
+      *renderer->texture_image_transformation_command_buffer,
+      &command_buffer_begin_info);
+
+  if (res != VK_SUCCESS) {
+    R_FATAL("error begining one time command \n");
+  }
+}
+
+/// NOTE: this function shoudnt access the renderer it should only end the given
+/// command buffer
+void end_one_time_command_buffer(renderer *renderer) {
+
+  VkResult res;
+
+  res = vkEndCommandBuffer(
+      *renderer->texture_image_transformation_command_buffer);
+  if (res != VK_SUCCESS) {
+    R_FATAL("error ending command buffer");
+  }
+
+  const VkSubmitInfo submit_info = {
+      .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+      .pNext = NULL,
+      .commandBufferCount = 1,
+      .pCommandBuffers = renderer->texture_image_transformation_command_buffer};
+
+  res = vkQueueSubmit(renderer->my_queue, 1, &submit_info, NULL);
+
+  if (res != VK_SUCCESS) {
+    R_FATAL("error submitting queue");
+  }
+
+  res = vkQueueWaitIdle(renderer->my_queue);
+
+  if (res != VK_SUCCESS) {
+    R_FATAL("error waiting for queuee");
   }
 }

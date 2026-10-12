@@ -82,13 +82,14 @@ void update_uniform_buffer(uint32_t current_image, renderer *renderer) {
 
   uniform_buffer_obj ubo = {0};
 
-// so now our zubuffer and cube rendering is working
+
   glm_mat4_identity(ubo.model);
   vec3 axis = {0.0f, 0.0f, 1.0f};
-  glm_rotate(ubo.model, glm_rad(90.f), axis);
-  vec3 eye = {2.0f, 2.0f, 2.0f};
+  /// not bug but this will rotate our image
+  // glm_rotate(ubo.model, glm_rad(90.f), axis);
+  vec3 eye = {0.0f, 0.0f, 3.0f};
   vec3 target = {0.0f, 0.0f, 0.0f};
-  vec3 up = {0.0f, 0.0f, 1.0f};
+  vec3 up = {0.0f, 1.0f, 0.0f};
 
   glm_lookat(eye, target, up, ubo.view);
   float aspect_ratio =

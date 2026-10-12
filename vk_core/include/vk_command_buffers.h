@@ -10,5 +10,7 @@
 
 void create_command_buffer(renderer *renderer);
 VkResult record_cmd_buffer(renderer *renderer, uint32_t image_index);
+void begin_one_time_command_buffer(renderer *renderer);
+void end_one_time_command_buffer(renderer *renderer);
 
 #endif // VULKAN_RENDERER_VK_COMMAND_BUFFERS_H

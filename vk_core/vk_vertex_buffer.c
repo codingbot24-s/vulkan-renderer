@@ -27,36 +27,29 @@ void get_attribute_description(
   attribute_descriptions[1].binding = 0;
   attribute_descriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
   attribute_descriptions[1].offset = sizeof(float) * 3;
+
+  attribute_descriptions[2].location = 2;
+  attribute_descriptions[2].binding = 0;
+  attribute_descriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
+  attribute_descriptions[2].offset = sizeof(float) * 6;
 }
 
 void create_vertex_buffer(renderer *renderer) {
 
-  const vertex vertices[] = {
-      {
-          {-0.5f, -0.5f, 0.0f},
-          {1.0f, 0.0f, 0.0f},
-      },
-      {
-          {0.5f, -0.5f, 0.0f},
-          {0.0f, 1.0f, 0.0f},
-      },
-      {
-          {0.5f, 0.5f, 0.0f},
-          {0.0f, 0.0f, 1.0f},
-      },
-      {
-          {-0.5f, 0.5f, 0.0f},
-          {1.0f, 1.0f, 1.0f},
-      },
-      {
-          {-0.5f, -0.5f, -0.5f},
-          {1.0f, 0.0f, 0.0f},
-      },
-  };
 
-  VkVertexInputAttributeDescription input_attribute_descriptions[2];
+    const vertex vertices[] = {
+      {{-0.5f, -0.5f, 0.0f}, {1, 0, 0}, {0, 1}},
+      {{ 0.5f, -0.5f, 0.0f}, {0, 1, 0}, {1, 1}},
+      {{ 0.5f,  0.5f, 0.0f}, {0, 0, 1}, {1, 0}},
+      {{-0.5f,  0.5f, 0.0f}, {1, 1, 1}, {0, 0}},
+
+};
+
+
+
+  VkVertexInputAttributeDescription input_attribute_descriptions[3];
   get_attribute_description(input_attribute_descriptions);
-
+  /// ok so we will continue from here
   VkResult res = create_buffer(
       renderer, sizeof(vertices), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
       VK_SHARING_MODE_EXCLUSIVE, &renderer->vertex_buffer);

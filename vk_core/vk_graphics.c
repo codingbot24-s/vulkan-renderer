@@ -69,7 +69,7 @@ void create_graphics_pipeline(renderer *renderer) {
       fragment_shader_stage,
   };
 
-  VkVertexInputAttributeDescription input_attribute_description[2];
+  VkVertexInputAttributeDescription input_attribute_description[3];
   get_attribute_description(input_attribute_description);
 
   VkVertexInputBindingDescription binding_description =
@@ -80,7 +80,7 @@ void create_graphics_pipeline(renderer *renderer) {
       .vertexBindingDescriptionCount = 1,
       .pVertexBindingDescriptions = &binding_description,
       /// NOTE: hardcoded 2 change this
-      .vertexAttributeDescriptionCount = 2,
+      .vertexAttributeDescriptionCount = 3,
       .pVertexAttributeDescriptions = input_attribute_description,
   };
   VkPipelineInputAssemblyStateCreateInfo input_assembly_state_create_info = {

@@ -55,6 +55,10 @@ typedef struct renderer {
   VkDeviceMemory stagin_buffer_memory;
   VkImage texture_image;
   VkDeviceMemory texture_image_memory;
+  VkCommandBuffer *texture_image_transformation_command_buffer;
+  VkImageView texture_image_view;
+
+  VkSampler sampler;
 } renderer;
 
 #endif // VULKAN_RENDERER_RENDERER_H

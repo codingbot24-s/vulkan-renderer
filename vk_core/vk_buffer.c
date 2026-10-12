@@ -114,3 +114,25 @@ uint32_t find_memory_type(uint32_t memory_type,
 
   return -1;
 }
+
+void copy_buffer_to_image(VkCommandBuffer *cmd_buffer, VkBuffer *src_buffer,
+                          VkImage *dst_image, VkImageLayout dst_image_layout,
+                          uint32_t width, uint32_t height) {
+
+  VkBufferImageCopy region = {
+      .bufferOffset = 0,
+      .imageOffset = {0, 0, 0},
+      .bufferRowLength = 0,
+      .bufferImageHeight = 0,
+      .imageSubresource =
+          {
+              .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+              .baseArrayLayer = 0,
+              .layerCount = 1,
+              .mipLevel = 0,
+          },
+      .imageExtent = {width, height, 1},
+  };
+  vkCmdCopyBufferToImage(*cmd_buffer, *src_buffer, *dst_image, dst_image_layout,
+                         1, &region);
+}

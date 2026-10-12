@@ -85,13 +85,34 @@ void create_image_views(renderer *renderer, VkImage image, VkFormat format,
   }
 }
 
+/// NOTE: from now on this function will require the command buffer for pipeline
+/// barrier
+
 void transition_image_layout(renderer *renderer, VkImage image,
+                             VkCommandBuffer *cmd_buffer,
                              VkImageLayout old_layout, VkImageLayout new_layout,
                              VkAccessFlags2 src_access_mask,
                              VkAccessFlags2 dst_access_mask,
                              VkPipelineStageFlags2 src_stage_mask,
                              VkPipelineStageFlags2 dst_stage_mask,
                              VkImageAspectFlags aspect_flags) {
+  /// NOTE: check our other call to this function so this check dont create the
+  /// problem for us
+  if (old_layout == VK_IMAGE_LAYOUT_UNDEFINED &&
+      new_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+    src_access_mask = 0;
+    src_stage_mask = VK_PIPELINE_STAGE_TRANSFER_BIT;
+
+    dst_stage_mask = VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT;
+    dst_access_mask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
+  } else if (old_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL &&
+             new_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+    src_access_mask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
+    src_stage_mask = VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT;
+
+    dst_stage_mask = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
+    dst_access_mask = VK_ACCESS_2_SHADER_READ_BIT;
+  }
   VkImageMemoryBarrier2 barrier = {
       .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
       .srcStageMask = src_stage_mask,
@@ -102,7 +123,6 @@ void transition_image_layout(renderer *renderer, VkImage image,
       .newLayout = new_layout,
       .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
       .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-      /// this would be problem for us for depth we also need to pass the image
       .image = image,
       .subresourceRange =
           {
@@ -121,6 +141,5 @@ void transition_image_layout(renderer *renderer, VkImage image,
       .pImageMemoryBarriers = &barrier,
   };
 
-  vkCmdPipelineBarrier2(renderer->command_buffers[renderer->frame_index],
-                        &dependency_info);
+  vkCmdPipelineBarrier2(*cmd_buffer, &dependency_info);
 }
