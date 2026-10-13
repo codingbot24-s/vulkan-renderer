@@ -5,7 +5,7 @@
 #include "./include/vk_vertex_buffer.h"
 #include "../log/loger.h"
 #include "../renderer.h"
-#include "include/vk_buffer.h"
+#include "./include/vk_buffer.h"
 #include "vulkan/vulkan_core.h"
 
 VkVertexInputBindingDescription get_binding_description() {
@@ -36,23 +36,14 @@ void get_attribute_description(
 
 void create_vertex_buffer(renderer *renderer) {
 
-
-    const vertex vertices[] = {
-      {{-0.5f, -0.5f, 0.0f}, {1, 0, 0}, {0, 1}},
-      {{ 0.5f, -0.5f, 0.0f}, {0, 1, 0}, {1, 1}},
-      {{ 0.5f,  0.5f, 0.0f}, {0, 0, 1}, {1, 0}},
-      {{-0.5f,  0.5f, 0.0f}, {1, 1, 1}, {0, 0}},
-
-};
-
-
-
+  /// we need those vertices here
   VkVertexInputAttributeDescription input_attribute_descriptions[3];
   get_attribute_description(input_attribute_descriptions);
-  /// ok so we will continue from here
-  VkResult res = create_buffer(
-      renderer, sizeof(vertices), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-      VK_SHARING_MODE_EXCLUSIVE, &renderer->vertex_buffer);
+
+  size_t buffer_size = sizeof(vertex) * renderer->vertices_count;
+  VkResult res =
+      create_buffer(renderer, buffer_size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                    VK_SHARING_MODE_EXCLUSIVE, &renderer->vertex_buffer);
   if (res != VK_SUCCESS) {
     R_FATAL("cant create the vertex buffer");
   }
@@ -61,30 +52,31 @@ void create_vertex_buffer(renderer *renderer) {
   vkGetBufferMemoryRequirements(renderer->my_device, renderer->vertex_buffer,
                                 &buffer_memory_requirments);
 
-  allocate_buffer(renderer,
-                  find_memory_type(buffer_memory_requirments.memoryTypeBits,
-                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                       VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                   renderer),
-                  buffer_memory_requirments.size,
-                  &renderer->vertex_buffer_memory);
+  res = allocate_buffer(
+      renderer,
+      find_memory_type(buffer_memory_requirments.memoryTypeBits,
+                       VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                           VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                       renderer),
+      buffer_memory_requirments.size, &renderer->vertex_buffer_memory);
   if (res != VK_SUCCESS) {
     R_FATAL("cant allocate the vertex buffer memory");
   }
 
-  bind_buffer_memory(renderer, renderer->vertex_buffer,
-                     renderer->vertex_buffer_memory, 0);
+  res = bind_buffer_memory(renderer, renderer->vertex_buffer,
+                           renderer->vertex_buffer_memory, 0);
   if (res != VK_SUCCESS) {
     R_FATAL("cant bind the buffer memory");
   }
 
   void *data;
-  map_memory(renderer, renderer->vertex_buffer_memory, 0, sizeof(vertices),
-             &data);
+  res = map_memory(renderer, renderer->vertex_buffer_memory, 0, buffer_size,
+                   &data);
   if (res != VK_SUCCESS) {
     R_FATAL("cant mapping memory to host");
   }
-  r_copy(data, vertices, sizeof(vertices));
+
+  r_copy(data, renderer->vertices, buffer_size);
   vkUnmapMemory(renderer->my_device, renderer->vertex_buffer_memory);
 
 #ifndef NDEBUG

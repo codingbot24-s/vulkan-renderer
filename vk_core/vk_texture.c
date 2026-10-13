@@ -12,12 +12,15 @@
 #include "../log/loger.h"
 #include "./include/vk_command_buffers.h"
 
+#define IMAGE_PATH "/home/saad/code/c/vulkan-renderer/texture/viking_room.png"
+
+
 void create_texture_image(renderer *renderer) {
   int texture_width, texture_height, texture_channels;
 
   stbi_uc *pixels =
-      stbi_load("../texture/texture.jpg", &texture_width, &texture_height,
-                &texture_channels, STBI_rgb_alpha);
+      stbi_load(IMAGE_PATH, &texture_width,
+                &texture_height, &texture_channels, STBI_rgb_alpha);
 
   if (!pixels) {
     R_FATAL("error loading texture \n");

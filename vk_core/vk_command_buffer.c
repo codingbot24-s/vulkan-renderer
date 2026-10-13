@@ -94,8 +94,8 @@ VkResult record_cmd_buffer(renderer *renderer, uint32_t image_index) {
   vkCmdBindVertexBuffers(renderer->command_buffers[renderer->frame_index], 0, 1,
                          &renderer->vertex_buffer, offsets);
 
-  vkCmdBindIndexBuffer(renderer->command_buffers[renderer->frame_index],
-                       renderer->index_buffer, 0, VK_INDEX_TYPE_UINT16);
+  // vkCmdBindIndexBuffer(renderer->command_buffers[renderer->frame_index],
+  //                      renderer->index_buffer, 0, VK_INDEX_TYPE_UINT32);
 
   VkViewport viewport = {0};
   viewport.height = -(float)renderer->swap_extent.height;
@@ -119,9 +119,13 @@ VkResult record_cmd_buffer(renderer *renderer, uint32_t image_index) {
       &renderer->descriptor_sets[renderer->frame_index], 0, 0);
   /// NOTE: hardcoded 6 for rectangle change this yes we need to change this
   /// because our indices is changed 6 is wrong for cube we need the 36
-  vkCmdDrawIndexed(renderer->command_buffers[renderer->frame_index], 6, 1, 0, 0,
-                   0);
-
+  /// vkCmdDrawIndexed(renderer->command_buffers[renderer->frame_index], 6, 1,
+  /// 0, 0,
+  ///                0);
+  //
+  /// REMOVE: this draw call this is draw call without using index buffers
+  vkCmdDraw(renderer->command_buffers[renderer->frame_index],
+            renderer->vertices_count, 1, 0, 0);
   vkCmdEndRendering(renderer->command_buffers[renderer->frame_index]);
 
   transition_image_layout(

@@ -63,6 +63,7 @@ add_executable(vulkan-renderer
         vk_core/vk_texture.c
         load_model.c
         load_model.h
+        vertex.h
 )
 
 set(VULKAN_SDK "/opt/vulkan/1.4.357.1/x86_64")

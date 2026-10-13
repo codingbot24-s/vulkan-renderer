@@ -1,85 +1,79 @@
-//
-// Created by saad on 10/12/26.
-//
+
+
+#include "log/loger.h"
+#include <stdint.h>
+#define FAST_OBJ_IMPLEMENTATION
+#include "./libs/fast_obj.h"
+#include "renderer.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include "log/loger.h"
-#include <stdbool.h>
 
-static bool is_space(const char c) {
-    if (c == ' ') {
-        return true;
+void load_model(const char *filename, renderer *renderer) {
+
+  fastObjMesh *mesh = fast_obj_read(filename);
+
+  if (mesh == NULL) {
+    fprintf(stderr, "Failed to load model: %s\n", filename);
+    return;
+  }
+
+  /*
+   *
+        mesh->positions this is original vertices like x , y , z for 1 vertex
+   and x , y , z for second vertex and it goes like this
+
+   *
+   *
+   */
+
+  /*
+   this is how many positions (vertices we have)
+  mesh->position_count;
+   *
+   *
+   *
+   */
+
+  /// check if this mesh is triangles only we dont support yet things that
+  /// are not triangles for now
+  for (int i = 0; i < mesh->face_count; ++i) {
+    if (mesh->face_vertices[i] > 3) {
+      R_FATAL("Error we dont support mesh that with face count of > 3");
     }
+  }
 
-    return false;
-}
+  /*
+   *  a face is like this f 1/1/1 2/2/2 3/3/3
+      1/1/1 this is one corner of the face
+      mesh->indices[0] will give us this 1/1/1 and it goes on like
+      mesh->inices[1 ] will give the second the second 2/2/2
+      and mesh->index_count is how many of 1/1/1 and 2/2/2 3/3/3
+      */
+  uint32_t corner_count = mesh->index_count;
+  // the vertex is not only x , y, z but is also the corner
+  vertex *vertices = malloc(corner_count * sizeof(*vertices));
+  uint32_t *indices = malloc(corner_count * sizeof(*indices));
 
-/// return 1 if success else crash
-/// out buffer the data if obj will be in that outbuffer
-int read_obj_and_store_in_buffer(const char* filename, char** out_buffer) {
-    FILE *f = fopen(filename, "r");
-    if (f == NULL) {
-        R_FATAL("Could not open model file");
-    }
+  for (uint32_t i = 0; i < corner_count; ++i) {
+    //// one corner
+    fastObjIndex index = mesh->indices[i];
 
-    if (fseek(f, 0, SEEK_END) != 0) {
-        R_FATAL("seek failed");
+    vertices[i].pos[0] = mesh->positions[index.p * 3 + 0];
+    vertices[i].pos[1] = mesh->positions[index.p * 3 + 1];
+    vertices[i].pos[2] = mesh->positions[index.p * 3 + 2];
 
-    }
-    const ssize_t fsize = ftell(f);
-    if (fsize < 0) {
-        fclose(f);
-        R_FATAL("ftell failed");
-    }
-    rewind(f);
+    vertices[i].uvs[0] = mesh->texcoords[index.t * 2 + 0];
+    vertices[i].uvs[1] = 1.0f - mesh->texcoords[index.t * 2 + 1];
 
-    /// buffer that stores the obj data from file
-    char *buffer = (char*) malloc(fsize + 1);
-    if (buffer == NULL) {
-        fclose(f);
-        R_FATAL("buffer malloc failed");
-    }
+    vertices[i].color[0] = 1.0f;
+    vertices[i].color[1] = 1.0f;
+    vertices[i].color[2] = 1.0f;
 
-    size_t bytes_read = fread(buffer, 1, fsize, f);
-    if (bytes_read < fsize) {
-        free(buffer);
-        fclose(f);
-        R_FATAL("buffer malloc failed");
-    }
-    buffer[bytes_read] = '\0';
+    /// this is the index of the vertex that is currently generated from looping
+    /// over the corner count
+    indices[i] = i;
+  }
 
-    *out_buffer = buffer;
-    return 1;
-}
-
-
-int parse_line(char* line) {
-    char *token = line;
-    if (token[0] == '\0') {
-        return 0;
-    }
-    if (token[0] == '#') {
-        return 0;
-    }
-    /// this will x , y , z of vertex
-    if (token[0] == 'v' && is_space(token[1])) {
-        float x, y, z;
-        if (sscanf(token, "v %f %f %f", &x, &y, &z) == 3) {
-
-        }
-    }
-}
-
-/// pass the filename (obj) for loading
-void load_model(const char *filename) {
-    char* buffer;
-    if (read_obj_and_store_in_buffer(filename, &buffer) != 1) {
-        return;
-    }
-    char* line = strtok(buffer, "\n");
-    while (line != NULL) {
-        parse_line(line);
-        line = strtok(NULL, "\n");
-    }
+  renderer->vertices = vertices;
+  renderer->vertices_count = corner_count;
 }

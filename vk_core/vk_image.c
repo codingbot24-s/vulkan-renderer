@@ -51,8 +51,8 @@ void create_image(renderer *renderer, uint32_t width, uint32_t height,
   if (res != VK_SUCCESS) {
     R_FATAL("error allocating memory for image");
   }
-
   res = vkBindImageMemory(renderer->my_device, *p_to_store_image, *image_memory,
+
                           0);
 
   if (res != VK_SUCCESS) {

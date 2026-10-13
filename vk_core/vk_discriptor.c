@@ -128,7 +128,7 @@ void create_descriptor_set(renderer *renderer) {
             .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             .pImageInfo = &image_info,
         },
-    };
+     };
 
     vkUpdateDescriptorSets(renderer->my_device, 2, write_descriptor_sets, 0,
                            NULL);

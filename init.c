@@ -21,6 +21,8 @@
 #include "vk_core/include/vk_zbuffer.h"
 #include "window.h"
 
+#define PATH_NAME "/home/saad/code/c/vulkan-renderer/models/viking_room.obj"
+
 void init_vulkan(renderer *renderer) {
   renderer->my_vk_instance = create_instance();
   setup_debug_messenger(renderer->my_vk_instance);
@@ -36,7 +38,7 @@ void init_vulkan(renderer *renderer) {
   create_texture_image_view(renderer);
   create_texture_sampler(renderer);
   /// TODO: remove this function from here it is not vulkan function
-  load_model("/home/saad/code/c/vulkan-renderer/models/viking_room.obj");
+  load_model(PATH_NAME, renderer);
   create_vertex_buffer(renderer);
   create_index_buffer(renderer);
   create_uniform_buffer(renderer);

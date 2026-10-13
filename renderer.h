@@ -8,6 +8,8 @@
 #include <GLFW/glfw3.h>
 #include <stdint.h>
 #include <vulkan/vulkan_core.h>
+#include "vertex.h"
+
 typedef struct renderer {
   GLFWwindow *window;
   VkInstance my_vk_instance;
@@ -59,6 +61,9 @@ typedef struct renderer {
   VkImageView texture_image_view;
 
   VkSampler sampler;
+
+  vertex *vertices;
+  uint64_t vertices_count;
 } renderer;
 
 #endif // VULKAN_RENDERER_RENDERER_H
