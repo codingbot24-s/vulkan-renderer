@@ -4,6 +4,7 @@
 
 #include "init.h"
 #include "./load_model.h"
+#include "cglm/types.h"
 #include "renderer.h"
 #include "vk_core/include/vk_command_buffers.h"
 #include "vk_core/include/vk_commandpool.h"
@@ -21,7 +22,7 @@
 #include "vk_core/include/vk_zbuffer.h"
 #include "window.h"
 
-#define PATH_NAME "/home/saad/code/c/vulkan-renderer/models/viking_room.obj"
+#define OBJ_PATH_NAME "/home/saad/code/c/vulkan-renderer/models/viking_room.obj"
 
 void init_vulkan(renderer *renderer) {
   renderer->my_vk_instance = create_instance();
@@ -37,8 +38,9 @@ void init_vulkan(renderer *renderer) {
   create_texture_image(renderer);
   create_texture_image_view(renderer);
   create_texture_sampler(renderer);
-  /// TODO: remove this function from here it is not vulkan function
-  load_model(PATH_NAME, renderer);
+  /// TODO: remove this load model function from here it is not vulkan function
+
+  load_model(OBJ_PATH_NAME, renderer);
   create_vertex_buffer(renderer);
   create_index_buffer(renderer);
   create_uniform_buffer(renderer);
@@ -50,9 +52,21 @@ void init_vulkan(renderer *renderer) {
 }
 
 void run_app() {
+
   renderer renderer;
   renderer.frame_index = 0;
   renderer.image_index = 0;
+  camera camera = {
+      .pos = {2.0f, 2.0f, 2.0f},
+      .target =
+          {
+              0.0f,
+              0.0f,
+              0.0f,
+          },
+  };
+
+  renderer.camera = &camera;
   create_window(&renderer);
 
   init_vulkan(&renderer);

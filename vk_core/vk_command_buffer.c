@@ -115,6 +115,7 @@ VkResult record_cmd_buffer(renderer *renderer, uint32_t image_index) {
   // cube indices
   vkCmdBindDescriptorSets(
       renderer->command_buffers[renderer->frame_index],
+
       VK_PIPELINE_BIND_POINT_GRAPHICS, renderer->pipeline_layout, 0, 1,
       &renderer->descriptor_sets[renderer->frame_index], 0, 0);
   /// NOTE: hardcoded 6 for rectangle change this yes we need to change this
@@ -223,7 +224,7 @@ void end_one_time_command_buffer(renderer *renderer) {
       .commandBufferCount = 1,
       .pCommandBuffers = renderer->texture_image_transformation_command_buffer};
 
-  res = vkQueueSubmit(renderer->my_queue, 1, &submit_info, NULL);
+  res = vkQueueSubmit(renderer->my_queue, 1, &submit_info, NULL); 
 
   if (res != VK_SUCCESS) {
     R_FATAL("error submitting queue");

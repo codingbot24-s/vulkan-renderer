@@ -5,10 +5,16 @@
 #ifndef VULKAN_RENDERER_RENDERER_H
 #define VULKAN_RENDERER_RENDERER_H
 
+#include "cglm/types.h"
+#include "vertex.h"
 #include <GLFW/glfw3.h>
 #include <stdint.h>
 #include <vulkan/vulkan_core.h>
-#include "vertex.h"
+
+typedef struct camera {
+  vec3 pos;
+  vec3 target;
+} camera;
 
 typedef struct renderer {
   GLFWwindow *window;
@@ -64,6 +70,8 @@ typedef struct renderer {
 
   vertex *vertices;
   uint64_t vertices_count;
+
+  camera *camera;
 } renderer;
 
 #endif // VULKAN_RENDERER_RENDERER_H

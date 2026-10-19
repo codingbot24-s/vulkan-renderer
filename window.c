@@ -2,8 +2,10 @@
 // Created by saad on 9/6/26.
 //
 #include <stdint.h>
+#include <stdlib.h>
 #include <vulkan/vulkan_core.h>
 #define GLFW_INCLUDE_VULKAN
+#include "./input.h"
 #include "./log/loger.h"
 #include "./vk_core/include/vk_command_buffers.h"
 #include "constant.h"
@@ -48,7 +50,8 @@ VkResult draw_frame(renderer *renderer) {
       renderer->my_device, renderer->my_swapchain, UINT64_MAX,
       renderer->image_available_semaphore[renderer->frame_index], NULL,
       &renderer->image_index);
-  /// NOTE: this returns the result with optimal flag so this check is required for now
+  /// NOTE: this returns the result with optimal flag so this check is required
+  /// for now
   /// TODO: fix this and remove the suboptimal flag
 
   if (res != VK_SUCCESS && res != VK_SUBOPTIMAL_KHR) {
@@ -112,10 +115,24 @@ VkResult draw_frame(renderer *renderer) {
   return VK_SUCCESS;
 }
 
+void key_callback(GLFWwindow *window, int key, int scancode, int action,
+                  int mods) {
+  // only close window key is handled here
+  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+    glfwSetWindowShouldClose(window, GL_TRUE);
+  }
+
+  renderer *r = glfwGetWindowUserPointer(window);
+  handle_input(key, action, r);
+}
+
 void main_loop(GLFWwindow *window, renderer *renderer) {
+
+  glfwSetWindowUserPointer(window, renderer);
+  glfwSetKeyCallback(window, key_callback);
   while (!glfwWindowShouldClose(window)) {
-    glfwPollEvents();
     draw_frame(renderer);
+    glfwPollEvents();
   }
 }
 
