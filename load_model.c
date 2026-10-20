@@ -7,6 +7,7 @@
 #include "renderer.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "load_model.h"
 
 void load_model(const char *filename, renderer *renderer) {
 
@@ -50,7 +51,7 @@ void load_model(const char *filename, renderer *renderer) {
       and mesh->index_count is how many of 1/1/1 and 2/2/2 3/3/3
       */
   uint32_t corner_count = mesh->index_count;
-  // the vertex is not only x , y, z but is also the corner
+  // the vertex is not only x , y, z but is also-the corner
   vertex *vertices = malloc(corner_count * sizeof(*vertices));
   uint32_t *indices = malloc(corner_count * sizeof(*indices));
 
@@ -74,6 +75,19 @@ void load_model(const char *filename, renderer *renderer) {
     indices[i] = i;
   }
 
+
+  model model;
+  model.model_pos[0] = 0.0f;
+  model.model_pos[1] = 0.0f;
+  model.model_pos[2] = 0.0f;
+
+  model.model_scale[0] = 0.1f;
+  model.model_scale[1] = 0.1f;
+  model.model_scale[2] = 0.1;
+
+  renderer->model = model;
+
+  //// TODO: move this to model because this are model vertices
   renderer->vertices = vertices;
   renderer->vertices_count = corner_count;
 }

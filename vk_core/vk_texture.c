@@ -12,7 +12,7 @@
 #include "../log/loger.h"
 #include "./include/vk_command_buffers.h"
 
-#define IMAGE_PATH "/home/saad/code/c/vulkan-renderer/texture/viking_room.png"
+#define IMAGE_PATH "/home/saad/Downloads/obj/iscv2_u1_v2.jpg"
 
 
 void create_texture_image(renderer *renderer) {

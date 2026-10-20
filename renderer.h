@@ -11,10 +11,19 @@
 #include <stdint.h>
 #include <vulkan/vulkan_core.h>
 
+
+//// TODO: remove camera from here
 typedef struct camera {
   vec3 pos;
   vec3 target;
 } camera;
+
+//// TODO: remove camera from here
+typedef struct model {
+  vec3 model_pos;
+  vec3 model_scale;
+
+} model;
 
 typedef struct renderer {
   GLFWwindow *window;
@@ -72,6 +81,8 @@ typedef struct renderer {
   uint64_t vertices_count;
 
   camera *camera;
+
+  model model;
 } renderer;
 
 #endif // VULKAN_RENDERER_RENDERER_H

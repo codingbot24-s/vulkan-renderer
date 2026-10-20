@@ -22,7 +22,7 @@
 #include "vk_core/include/vk_zbuffer.h"
 #include "window.h"
 
-#define OBJ_PATH_NAME "/home/saad/code/c/vulkan-renderer/models/viking_room.obj"
+#define OBJ_PATH_NAME "/home/saad/Downloads/obj/iscv2.obj"
 
 void init_vulkan(renderer *renderer) {
   renderer->my_vk_instance = create_instance();

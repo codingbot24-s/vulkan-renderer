@@ -5,7 +5,9 @@
 /// TODO:  use an index buffer for rendering the model
 
 /*
-    TODO: add camera movement
+    TODO: add camera movement done
+    TODO: add model scale
+    TODO: add Lighting
 */
 
 #include "init.h"

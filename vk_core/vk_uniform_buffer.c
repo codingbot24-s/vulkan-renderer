@@ -11,7 +11,6 @@
 #include "cglm/affine-pre.h"
 #include "cglm/util.h"
 #include "vulkan/vulkan_core.h"
-#include <GLFW/glfw3.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -78,8 +77,12 @@ void update_uniform_buffer(uint32_t current_image, renderer *renderer) {
 
   glm_mat4_identity(ubo.model);
 
+  glm_translate(ubo.model,renderer->model.model_pos);
   vec3 axis = {0.0f, 0.0f, 0.0f};
   glm_rotate(ubo.model, glm_rad(0), axis);
+  glm_scale(ubo.model, renderer->model.model_scale);
+
+
 
   vec3 up = {0.0f, 0.0f, 1.0f};
   glm_lookat(renderer->camera->pos, renderer->camera->target, up, ubo.view);
