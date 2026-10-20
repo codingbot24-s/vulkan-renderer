@@ -15,7 +15,7 @@ The renderer is being developed incrementally, with a focus on understanding Vul
 ## Tech Stack
 
 - **Graphics API:** Vulkan
-- **Language:** C (if applicable)
+- **Language:** C 
 - **Development approach:** Built from scratch, one milestone at a time
 - **Development format:** Live-streamed coding sessions
 
